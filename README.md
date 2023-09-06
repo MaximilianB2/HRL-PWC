@@ -6,5 +6,14 @@ Proportional-Integral-Derivative (PID) controllers provide a simple and effectiv
 
 ## Run Case Studies
 
-Case study code can be found in ''CS1.ipynb'', ''CS2.ipynb'' and ''CS3.ipynb''
+Case study code can be found in ``CS1.ipynb``, ``CS2.ipynb`` and ``CS3.ipynb``
+
+## Case Study Simulation Results
+
+### Case Study 1 
+
+### Case Study 2
+
+### Case Study 3
+
 
