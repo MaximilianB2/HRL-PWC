@@ -18,14 +18,9 @@ In the first case study, a multiloop single continuously stirred tank reactor (C
 </P>
 
 The parametric mismatch analysis is shown below.
+<p><img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS1_ParaMis_UA-1.png" width = "50%" style="float: left; margin-right: 5%; margin-bottom: 1em; "><img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS1_ParaMis_k0-1.png" width = "50%" style="float: left; margin-right: 5%; margin-bottom: 1em; " >
+</p>
 
-<p align="center">
-  <img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS1_ParaMis_UA-1.png" width="50%">
-</P>
-
-<p align="center">
-  <img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS1_ParaMis_k0-1.png" width="50%">
-</P>
 
 
 ### Case Study 2
@@ -37,14 +32,8 @@ In the second case study, a distillation column is added. The objective function
 
 The parametric mismatch analysis is shown below.
 
-<p align="center">
-  <img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS2_ParaMis_UA-1.png" width="50%">
-</P>
-
-<p align="center">
-  <img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS2_ParaMis_k0-1.png" width="50%">
-</P>
-
+<p><img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS2_ParaMis_UA-1.png" width = "50%" style="float: left; margin-right: 5%; margin-bottom: 1em; "><img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS2_ParaMis_k0-1.png" width = "50%" style="float: left; margin-right: 5%; margin-bottom: 1em; " >
+</p>
 ### Case Study 3
 In the third case study, a recycle is added to the process used in Case Study 2. The objective function and manipulated variables remain the same as in Case Study 2. The simulation of this case study with the RL-PID, multiloop relay tuning, DFO-PID and NMPC control methods is shown below. The simulation of this case study with the RL-PID, multiloop relay tuning, DFO-PID and NMPC control methods is shown below.
 
@@ -53,13 +42,8 @@ In the third case study, a recycle is added to the process used in Case Study 2.
 </P>
 
 The parametric mismatch analysis is shown below.
-<p align="center">
-  <img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS3_ParaMis_UA-1.png" width="50%">
-</P>
-
-<p align="center">
-  <img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS3_ParaMis_k0-1.png" width="50%">
-</P>
+<p><img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS3_ParaMis_UA-1.png" width = "50%" style="float: left; margin-right: 5%; margin-bottom: 1em; "><img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS3_ParaMis_k0-1.png" width = "50%" style="float: left; margin-right: 5%; margin-bottom: 1em; " >
+</p>
 
 
 
