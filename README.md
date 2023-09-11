@@ -11,7 +11,7 @@ Case study code can be found in ``CS1.ipynb``, ``CS2.ipynb`` and ``CS3.ipynb``
 ## Case Study Results
 Below is the simulation and parametric mismatch analysis of all case studies. In the parametric mismatch, the catalyst activity $k_0$ and reactor jacket heat transfer coefficient $UA$ were varied.
 ### Case Study 1 
-In the first case study, a multiloop single continuously stirred tank reactor (CSTR) system is investigated. The objective is to track the setpoint for the output concentration of A ($C_A$) and the reactor temperature ($T$) by manipulating the jacket temperature ($T_J$). There is also a penalty for control inputs to promote smooth control. The reactor is assumed to be isothermal and perfectly mixed, and the reaction is irreversible and exothermic. This model is adapted from xxx. The simulation of this case study with the RL-PID, multiloop relay tuning, DFO-PID and NMPC control methods is shown below.
+In the first case study, a multiloop single continuously stirred tank reactor (CSTR) system is investigated. The objective is to track the setpoint for the output concentration of A ($C_A$) and the reactor temperature ($T$) by manipulating the jacket temperature ($T_J$). There is also a penalty for control inputs to promote smooth control. The reactor is assumed to be isothermal and perfectly mixed, and the reaction is irreversible and exothermic. This model is adapted from [Hedengren (2014)](http://www.apmonitor.com/che436/index.php/Main/CaseStudyCSTR) . The simulation of this case study with the RL-PID, multiloop relay tuning, DFO-PID and NMPC control methods is shown below.
 
 <p align="center">
   <img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS1%20(1)-1.png" width="100%">
@@ -24,7 +24,7 @@ The parametric mismatch analysis is shown below.
 
 
 ### Case Study 2
-In the second case study, a distillation column is added. The objective function is then changed to track the distillate concentration of B ($x_{D,B}$) by manipulating the reflux ratio ($R_R$) and the reactor jacket temperature ($T_j$). The distillation column is assumed to be at a constant temperature. This model is adapted from xxx. The simulation of this case study with the RL-PID, multiloop relay tuning, DFO-PID and NMPC control methods is shown below.
+In the second case study, a distillation column is added. The objective function is then changed to track the distillate concentration of B ($x_{D,B}$) by manipulating the reflux ratio ($R_R$) and the reactor jacket temperature ($T_j$). The distillation column is assumed to be at a constant temperature. This model is adapted from [Hedengren (2020)](https://apmonitor.com/pdc/index.php/Main/DistillationControl). The simulation of this case study with the RL-PID, multiloop relay tuning, DFO-PID and NMPC control methods is shown below.
 <p align="center">
   <img src="https://github.com/MaximilianB2/MScProject/blob/main/fig/CS2-1.png" width="100%">
 </P>
