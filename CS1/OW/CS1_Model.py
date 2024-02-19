@@ -59,10 +59,11 @@ def cstr_CS1(x,t,u,Tf,Caf,k0,UA):
 
 # Create a gym environment
 class reactor_class(gym.Env):
-  def __init__(self,ns,test = False, DR = False):
+  def __init__(self,ns,test = False, DR = False,robust_test = False):
     self.ns = ns 
     self.test = test
     self.DR = DR
+    self.robust_test = robust_test
     Ca_des1 = [0.8 for i in range(int(ns/2))] + [0.9 for i in range(int(ns/2))]
     T_des1  = [330 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
 
@@ -109,18 +110,28 @@ class reactor_class(gym.Env):
     self.u  = np.ones(len(self.t)) * self.u_ss
     self.Ks_list = np.zeros((7,len(self.t)))
     self.Tf = 350 # Feed Temperature (K)
-  def UA_dist():
+  def UA_dist(self):
     sample = np.random.normal(0, 1e4)
     return 5e4 - abs(sample)
-  def k0_dist():
-    sample = np.random.normal(0, 5e10)
+  def UA_dist_test(self):
+     sample = np.random.uniform(0,1.2e4)
+     return 5e4 - abs(sample)
+  def k0_dist_test(self):
+    sample = np.random.uniform(0, 2.5e10)
+    return 7.2e10 - abs(sample)
+  def k0_dist(self):
+    sample = np.random.normal(0, 2e10)
     return 7.2e10 - abs(sample)
   def reset(self, seed = None):
     self.i = 0
     self.SP_i = 0
     if self.DR:
-      self.UA = self.UA_dist
-      self.k0 = self.k0_dist
+      self.UA = self.UA_dist()
+      self.k0 = self.k0_dist()
+    
+    elif self.robust_test:
+      self.UA = self.UA_dist_test()
+      self.k0 = self.k0_dist_test()
     Ca_des = self.SP[self.SP_i,0][self.i]
     T_des = self.SP[self.SP_i,1][self.i] 
     self.state = np.array([self.Ca_ss,self.T_ss,self.Ca_ss,self.T_ss,Ca_des,T_des])
@@ -162,6 +173,7 @@ class reactor_class(gym.Env):
     else:
       k0 = self.k0
       UA = self.UA
+    
     # Steady State Initial Conditions for the States
 
     Ca = state[0]
