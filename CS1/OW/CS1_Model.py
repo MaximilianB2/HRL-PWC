@@ -110,25 +110,34 @@ class reactor_class(gym.Env):
     self.u  = np.ones(len(self.t)) * self.u_ss
     self.Ks_list = np.zeros((7,len(self.t)))
     self.Tf = 350 # Feed Temperature (K)
+
+    
   def UA_dist(self):
-    sample = np.random.normal(0, 1e4)
+    sample = np.random.normal(0, 1.35e4)
     return 5e4 - abs(sample)
+  
+
   def UA_dist_test(self):
-     sample = np.random.uniform(0,1.2e4)
+     sample = np.random.uniform(0, 1.35e4)
      return 5e4 - abs(sample)
+  
+
   def k0_dist_test(self):
-    sample = np.random.uniform(0, 2.5e10)
+    sample = np.random.uniform(0, 3e10)
     return 7.2e10 - abs(sample)
+  
+
   def k0_dist(self):
-    sample = np.random.normal(0, 2e10)
+    sample = np.random.normal(0, 3e10)
     return 7.2e10 - abs(sample)
+  
+
   def reset(self, seed = None):
     self.i = 0
     self.SP_i = 0
     if self.DR:
       self.UA = self.UA_dist()
       self.k0 = self.k0_dist()
-    
     elif self.robust_test:
       self.UA = self.UA_dist_test()
       self.k0 = self.k0_dist_test()
@@ -167,13 +176,13 @@ class reactor_class(gym.Env):
     return self.state_norm,rew,self.done,False,{}
 
   def reactor(self,state,action,Ca_des,T_des):
-    if not self.DR:
+    if not self.DR or not self.robust_test:
       k0 = 7.2e10 #1/sec
       UA = 5e4 # W/K
-    else:
+    if self.robust_test or self.DR:
       k0 = self.k0
       UA = self.UA
-    
+   
     # Steady State Initial Conditions for the States
 
     Ca = state[0]

@@ -38,12 +38,12 @@ def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
     colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan', 'tab:blue', 'tab:orange']
 
     t = np.linspace(0, 20, ns)    
-    fig, axs = plt.subplots(4, 2, figsize=(10, 12))
-    for i in range(8):  # Loop over all 7 axes
-        ax = axs[i//2, i%2]  # Get current axes
-        ax.grid(True)  # Add grid
-        ax.set_xlim(left=0, right=20)  # Set x-axis limits
-        ax.set_xlabel('Time (h)')
+    fig, axs = plt.subplots(2, 4, figsize=(14, 10))
+    for ax_row in axs:  # Loop over rows of axes
+        for ax in ax_row:  # Loop over individual axes in each row
+            ax.grid(True)  # Add grid
+            ax.set_xlim(left=0, right=20)  # Set x-axis limits
+            ax.set_xlabel('Time (h)')
 
     # DFO Holdup Plots
     for i in range(3):
@@ -51,14 +51,11 @@ def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
         axs[0,0].fill_between(t,np.min(DFO_s_data[i],axis = 1),np.max(DFO_s_data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
         axs[0,0].set_ylabel('Vessel Holdup')
     #axs[0,0].step(t, SP, 'k--', where  = 'post',label='SP$_R$ \& SP$_B$')
-    axs[0,0].set_title('DFO Holdups', y=1.2)
+    axs[0,0].set_title('DFO Holdups', y=1.1)
     axs[0,0].step(t, SP_M, 'k-.', where  = 'post',label='SP')
-    axs[0,0].axvline(x = t[int((ns-1)/3)], alpha = 0.7, linestyle = 'dashed',label = '$F_0$ Disturbance') 
-    # ...
-
-   
-    axs[0,0].text(0.85, 0.95, 'DFO ISE: {:.2f}'.format(ISE_DFO), transform=axs[0,0].transAxes, ha='center', va='top', bbox=dict(facecolor='white', edgecolor='white'))
-    axs[0,1].text(0.85, 0.95, 'SAC ISE: {:.2f}'.format(ISE_SAC), transform=axs[0,1].transAxes, ha='center', va='top', bbox=dict(facecolor='white', edgecolor='white'))
+    axs[0,0].axvline(x=t[int((ns-1)/3)], alpha=0.7, linestyle = 'dashed',label = '$F_0$ Disturbance') 
+    axs[0, 0].text(0.75, 0.95, 'DFO ISE: {:.2f}'.format(ISE_DFO), transform=axs[0,0].transAxes, ha='center', va='top', bbox=dict(facecolor='white', edgecolor='white'))
+    axs[0,1].text(0.75, 0.95, 'SAC ISE: {:.2f}'.format(ISE_SAC), transform=axs[0,1].transAxes, ha='center', va='top', bbox=dict(facecolor='white', edgecolor='white'))
 
 
 
@@ -75,8 +72,8 @@ def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
     # axins.yaxis.set_visible(False)
     # mark_inset(axs[0,0], axins, loc1=2, loc2=4, fc="none", ec="0.5")
 
-    axs[0,0].legend(loc='upper center', bbox_to_anchor=(1.2, 1.25),
-          ncol=5,frameon=False)
+    axs[0,0].legend(loc='upper center', bbox_to_anchor=(1.2, 1.1),
+                    ncol=5, frameon=False)
     axs[0,0].set_ylim(20.5, 21.5)
     
     #SAC Holdup Plots
@@ -84,8 +81,8 @@ def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
         axs[0,1].plot(t,np.median(SAC_s_data[i],axis = 1), color=colors[i], label='SAC ' + labels[i])
         axs[0,1].fill_between(t,np.min(SAC_s_data[i],axis = 1),np.max(SAC_s_data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
         axs[0,1].set_ylabel('Vessel Holdup')
-    axs[0,1].set_title('SAC Holdups',y = 1.2)
-    #axs[0,0].step(t, SP, 'k--', where  = 'post',label='SP$_R$ \& SP$_B$')
+    axs[0,1].set_title('SAC Holdups',y = 1.1)
+    # axs[0,0].step(t, SP, 'k--', where  = 'post',label='SP$_R$ \& SP$_B$')
     axs[0,1].step(t, SP_M, 'k-.', where  = 'post',label='SP')
     axs[0,1].axvline(x = t[int((ns-1)/3)], alpha = 0.7, linestyle = 'dashed',label = '$F_0$ Disturbance') 
     # axins = zoomed_inset_axes(axs[0,1], zoom=3, loc='upper right')  
@@ -104,12 +101,12 @@ def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
     #       ncol=3,frameon=False)
     
     axs[0,1].set_ylim(20.5, 21.5)
-    #PID Action Plots
+    # PID Action Plots
     for i in range(0,4):
         axs[1,0].step(t, np.median(DFO_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='DFO ' + PID_labels[i % len(PID_labels)])
         axs[1,0].step(t, np.median(SAC_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='SAC ' + PID_labels[i % len(PID_labels)])
     axs[1,0].set_ylabel('$F_R$ PID Action')
-    axs[1,0].legend(loc='upper center', bbox_to_anchor=(1.2, 1.35),
+    axs[1,0].legend(loc='upper center', bbox_to_anchor=(2.5, 1.15),
           ncol=4,frameon=False)
     for i in range(4,8):
         axs[1,1].step(t, np.median(DFO_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='DFO ' +PID_labels[i % len(PID_labels)])
@@ -118,39 +115,38 @@ def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
     #axs[1,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.4),
           #ncol=4,frameon=False)
     for i in range(8,12):
-        axs[2,0].step(t, np.median(DFO_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='DFO' +PID_labels[i % len(PID_labels)])
-        axs[2,0].step(t, np.median(SAC_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='SAC' +PID_labels[i % len(PID_labels)])
-    axs[2,0].set_ylabel('$B$ PID Action')
-    #axs[2,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.4),
+        axs[1,2].step(t, np.median(DFO_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='DFO' +PID_labels[i % len(PID_labels)])
+        axs[1,2].step(t, np.median(SAC_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='SAC' +PID_labels[i % len(PID_labels)])
+    axs[1,2].set_ylabel('$B$ PID Action')
+    #axs[1,2].legend(loc='upper center', bbox_to_anchor=(0.5, 1.4),
           #ncol=4,frameon=False)
     
     for i in range(12,16):
-        axs[2,1].step(t, np.median(DFO_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='DFO' +PID_labels[i % len(PID_labels)])
-        axs[2,1].step(t, np.median(SAC_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='SAC' +PID_labels[i % len(PID_labels)])
-    axs[2,1].set_ylabel('$D$ PID Action')
+        axs[1, 3].step(t, np.median(DFO_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='DFO' +PID_labels[i % len(PID_labels)])
+        axs[1,3].step(t, np.median(SAC_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='SAC' +PID_labels[i % len(PID_labels)])
+    axs[1,3].set_ylabel('$D$ PID Action')
     #axs[2,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.4),
           #ncol=4,frameon=False)
 
     for i in range(2):
-        axs[3,0].step(t, np.median(DFO_c_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors[i+2 % len(colors)], label='DFO ' +control_labels[i])
-        axs[3,0].fill_between(t,np.min(DFO_c_data[i,:,:],axis = 1),np.max(DFO_c_data[i,:,:],axis = 1),color = colors[i+2 % len(colors)],alpha = 0.2,edgecolor = 'none')
-        axs[3,0].step(t, np.median(SAC_c_data[i,:,:],axis =1), where='post', color=colors[i % len(colors)], label='SAC ' +control_labels[i])
-        axs[3,0].fill_between(t,np.min(SAC_c_data[i,:,:],axis = 1),np.max(SAC_c_data[i,:,:],axis = 1),color = colors[i % len(colors)],alpha = 0.2,edgecolor = 'none')
-    axs[3,0].set_ylabel('Flowrate (h$^{-1}$)')
-    axs[3,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.35),
+        axs[0,3].step(t, np.median(DFO_c_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors[i+2 % len(colors)], label='DFO ' +control_labels[i])
+        axs[0,3].fill_between(t,np.min(DFO_c_data[i,:,:],axis = 1),np.max(DFO_c_data[i,:,:],axis = 1),color = colors[i+2 % len(colors)],alpha = 0.2,edgecolor = 'none')
+        axs[0,3].step(t, np.median(SAC_c_data[i,:,:],axis =1), where='post', color=colors[i % len(colors)], label='SAC ' +control_labels[i])
+        axs[0,3].fill_between(t,np.min(SAC_c_data[i,:,:],axis = 1),np.max(SAC_c_data[i,:,:],axis = 1),color = colors[i % len(colors)],alpha = 0.2,edgecolor = 'none')
+    axs[0,3].set_ylabel('Flowrate (h$^{-1}$)')
+    axs[0,3].legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
           ncol=2,frameon=False)
-   
- 
+
     for i in range(2,4):
-        axs[3,1].step(t, np.median(DFO_c_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors[i+2 % len(colors)], label='DFO ' +control_labels[i])
-        axs[3,1].fill_between(t,np.min(DFO_c_data[i,:,:],axis = 1),np.max(DFO_c_data[i,:,:],axis = 1),color = colors[i+2 % len(colors)],alpha = 0.2,edgecolor = 'none')
-        axs[3,1].step(t, np.median(SAC_c_data[i,:,:],axis =1), where='post', color=colors[i % len(colors)], label='SAC ' +control_labels[i])
-        axs[3,1].fill_between(t,np.min(SAC_c_data[i,:,:],axis = 1),np.max(SAC_c_data[i,:,:],axis = 1),color = colors[i % len(colors)],alpha = 0.2,edgecolor = 'none')
-    axs[3,1].set_ylabel('Flowrate (h$^{-1}$)')
-    axs[3,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.35),
-          ncol=2,frameon=False)
-    
-    plt.subplots_adjust(hspace = 0.6)
+        axs[0,2].step(t, np.median(DFO_c_data[i, :, :], axis =1),  where='post',  linestyle='dashed',  color=colors[i+2 % len(colors)],  label='DFO ' +control_labels[i])
+        axs[0, 2].fill_between(t,  np.min(DFO_c_data[i, :, :], axis = 1), np.max(DFO_c_data[i, :, :], axis = 1), color = colors[i+2 % len(colors)], alpha = 0.2, edgecolor = 'none')
+        axs[0, 2].step(t,  np.median(SAC_c_data[i, :, :], axis =1),  where='post',  color=colors[i % len(colors)],  label='SAC ' +control_labels[i])
+        axs[0, 2].fill_between(t,  np.min(SAC_c_data[i, :, :], axis = 1), np.max(SAC_c_data[i, :, :], axis = 1), color = olors[i % len(colors)], alpha = 0.2, edgecolor = 'none')
+    axs[0, 2].set_ylabel('Flowrate (h$^{-1}$)')
+    axs[0,2].legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
+                    ncol=2, frameon=False)
+
+    plt.subplots_adjust(hspace = 0.3)
     plt.subplots_adjust(wspace = 0.3)
     plt.savefig('PG_DFO_Comparison_wnoise_wF0_1602.pdf')
     plt.show()

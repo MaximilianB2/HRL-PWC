@@ -156,3 +156,5 @@ while i < max_iter and abs(best_reward - old_swarm[i]) > tol :
     i += 1
 print('Finished optimisation')
 print('Best reward:', best_reward)
+
+torch.save(best_policy.state_dict(), 'best_policy_DFO_2002.pth')

@@ -1,35 +1,30 @@
-#Import Libraries
-import gymnasium as gym
-from gymnasium import spaces 
-from stable_baselines3 import SAC, PPO
-from casadi import *
+# Import Libraries
+from stable_baselines3 import SAC
 import numpy as np
 import torch
-from stable_baselines3 import SAC, PPO
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
-from torch_pso import ParticleSwarmOptimizer
-import copy
-from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
+from stable_baselines3.common.callbacks import CheckpointCallback
 from typing import Callable
 from RSR_Model_1602 import RSR
 # Create Environment
 ns = 300
-env = RSR(ns,test=False,plot=False)
+env = RSR(ns, test=False, plot=False)
 
 
 def sample_uniform_params(params_prev, param_max, param_min):
-    params = {k: torch.rand(v.shape)* (param_max - param_min) + param_min \
+    params = {k: torch.rand(v.shape) * (param_max - param_min) + param_min
               for k, v in params_prev.items()}
     return params
+
 
 def sample_local_params(params_prev, param_max, param_min):
-    params = {k: torch.rand(v.shape)* (param_max - param_min) + param_min + v \
+    params = {k: torch.rand(v.shape) * (param_max - param_min) + param_min + v
               for k, v in params_prev.items()}
     return params
 
-  
-def plot_simulation(states,actions, control_inputs,ns):
+
+def plot_simulation(states, actions, control_inputs, ns):
     plt.rcParams['text.usetex'] = 'True'
     
     actions = np.array(actions)
@@ -339,6 +334,7 @@ def criterion(policy,ns):
 checkpoint_callback = CheckpointCallback(save_freq=1200, save_path="./logs/wNoise_F0",
                                          name_prefix="SAC_model_1602")
 
+
 def linear_schedule(initial_value: float) -> Callable[[float], float]:
     """
     Linear learning rate schedule.
@@ -355,20 +351,23 @@ def linear_schedule(initial_value: float) -> Callable[[float], float]:
         :return: current learning rate
         """
         if progress_remaining < 0.7:
-          return progress_remaining * initial_value
+            return progress_remaining * initial_value
         elif progress_remaining < 0.3:
-          return 0.02
+            return 0.02
         else:
-          return initial_value
+            return initial_value
     return func
 
-model = SAC('MlpPolicy', env, verbose = 1,learning_rate=linear_schedule(2e-2),device='cuda',seed =int(0))
-model.learn(total_timesteps=1e4,callback=checkpoint_callback)
+
+model = SAC('MlpPolicy', env, verbose=1, learning_rate=linear_schedule(2e-2),
+            device='cuda', seed=int(0))
+
+model.learn(total_timesteps=int(1e4), callback=checkpoint_callback)
 
 # model = SAC.load('./logs/wNoise/SAC_model_1602_13200_steps.zip')
 
 
-s, a,r,c = rollout(ns, model,3)
+s, a, r, c = rollout(ns, model, 3)
 
 
-plot_simulation(s,a,c,ns)
+plot_simulation(s, a, c, ns)

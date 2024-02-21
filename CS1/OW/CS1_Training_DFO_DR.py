@@ -1,59 +1,59 @@
+import copy
 import torch
 import torch.nn.functional as F
 from CS1_Model import reactor_class
 from torch_pso import ParticleSwarmOptimizer
-import copy
 import numpy as np
+
+
 def sample_uniform_params(params_prev, param_max, param_min):
-    params = {k: torch.rand(v.shape)* (param_max - param_min) + param_min \
+    params_uni = {k: torch.rand(v.shape) * (param_max - param_min) + param_min \
               for k, v in params_prev.items()}
-    return params
+    return params_uni
+
 
 def sample_local_params(params_prev, param_max, param_min):
-    params = {k: torch.rand(v.shape)* (param_max - param_min) + param_min + v \
+    params_local = {k: torch.rand(v.shape) * (param_max - param_min) + param_min + v \
               for k, v in params_prev.items()}
-    return params
+    return params_local
+
 
 class Net(torch.nn.Module):
+    def __init__(self, n_fc1, n_fc2, activation, n_layers, **kwargs):
+      super(Net, self).__init__()
 
-  def __init__(self, n_fc1, n_fc2, activation,n_layers,**kwargs):
-    super(Net, self).__init__()
+      # Unpack the dictionary
+      self.args     = kwargs
+      self.dtype    = torch.float
+      self.use_cuda = torch.cuda.is_available()
+      self.device   = torch.device("cpu")
 
-    # Unpack the dictionary
-    self.args     = kwargs
-    self.dtype    = torch.float
-    self.use_cuda = torch.cuda.is_available()
-    self.device   = torch.device("cpu")
+      self.input_size = 6 #State size: Ca, T, Ca setpoint and T setpoint
+      self.output_sz  = 7 #Output size: Reactor Ks size
+      self.n_layers = torch.nn.ModuleList()
+      self.hs1        = n_fc1                                    # !! parameters
+      self.hs2        = n_fc2                                      # !! parameter
 
-    self.input_size = 6 #State size: Ca, T, Ca setpoint and T setpoint
-    self.output_sz  = 7 #Output size: Reactor Ks size
-    self.n_layers = torch.nn.ModuleList()
-    self.hs1        = n_fc1                                    # !! parameters
-    self.hs2        = n_fc2                                      # !! parameter
+      # defining layer
+      self.hidden1 = torch.nn.Linear(self.input_size, self.hs1,bias=True)
+      self.act = activation()
+      self.hidden2 = torch.nn.Linear(self.hs1, self.hs2,bias=True)
+      for i in range(0,n_layers):
+        linear_layer = torch.nn.Linear(self.hs2,self.hs2)
+        self.n_layers.append(linear_layer)
+      self.output_mu = torch.nn.Linear(self.hs2, self.output_sz, bias=True)
+      self.output_std = torch.nn.Linear(self.hs2, self.output_sz, bias=True)
 
-    # defining layer
-    self.hidden1 = torch.nn.Linear(self.input_size, self.hs1,bias=True)
-    self.act = activation()
-    self.hidden2 = torch.nn.Linear(self.hs1, self.hs2,bias=True)
-    for i in range(0,n_layers):
-      linear_layer = torch.nn.Linear(self.hs2,self.hs2)
-      self.n_layers.append(linear_layer)
-    self.output_mu = torch.nn.Linear(self.hs2, self.output_sz, bias=True)
-    self.output_std = torch.nn.Linear(self.hs2, self.output_sz, bias=True)
-
-  def forward(self, x):
-
-    x = x.float()
-    y           = self.act(self.hidden1(x))
-    y           = self.act(self.hidden2(y))        
-    mu = self.output_mu(y)
-    log_std = self.output_std(y) 
-    dist = torch.distributions.Normal(mu, log_std.exp()+ 1e-6)
-    out = dist.sample()                                         
-    y = F.tanh(out) #[-1,1]
-   
-
-    return y
+    def forward(self, x):
+        x = x.float()
+        y = self.act(self.hidden1(x))
+        y = self.act(self.hidden2(y))        
+        mu = self.output_mu(y)
+        log_std = self.output_std(y) 
+        dist = torch.distributions.Normal(mu, log_std.exp()+ 1e-6)
+        out = dist.sample()                                         
+        y = F.tanh(out) #[-1,1]
+        return y
 def criterion(policy,SP,ns,k0,UA,env):
   
   s, _  = env.reset()
@@ -108,8 +108,8 @@ old_swarm = np.zeros(max_iter)
 best_reward = 1e8
 i = 0
 r_list = []
-r_list_i =[]
-p_list  =[]
+r_list_i = []
+p_list  = []
 
 evals_rs = 30
 
@@ -157,4 +157,5 @@ while i < max_iter and abs(best_reward - old_swarm[i]) > tol :
 print('Finished optimisation')
 print('Best reward:', best_reward)
 print('Saving robust model..')
+
 torch.save(best_policy.state_dict(), 'DFO_best_policy_DR_1902.pth')

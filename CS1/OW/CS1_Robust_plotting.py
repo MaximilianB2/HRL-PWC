@@ -48,7 +48,7 @@ class Net(torch.nn.Module):
 
 original_policy = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1 )
 DR_policy = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1 ) #TODO: Make deterministic for testing!
-original_policy.load_state_dict(torch.load('best_policy_0502.pth'))
+original_policy.load_state_dict(torch.load('best_policy_DFO_2002.pth'))
 DR_policy.load_state_dict(torch.load('DFO_best_policy_DR_1902.pth'))
 
 env = reactor_class(test = True,ns = 120,robust_test=True)
@@ -104,17 +104,27 @@ def rollout(ns,reps,Ca_des,T_des,policy):
     
         Tc_eval_EA[i,r_i] = env.u_history[-1]
       reward[r_i] = r_tot
-    return Ca_eval_EA, T_eval_EA, Tc_eval_EA, ks_eval_EA,reward
+    return Ca_eval_EA, T_eval_EA, Tc_eval_EA, ks_eval_EA, reward
+
 Ca_des = [0.87 for i in range(int(2*ns/5))] + [0.91 for i in range(int(ns/5))] + [0.85 for i in range(int(2*ns/5))]                     
 T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
-Ca_eval_orig, T_eval_orig, Tc_eval_orig, ks_eval_orig,reward_orig  = rollout(ns,50,Ca_des,T_des,original_policy)
+Ca_eval_orig, T_eval_orig, Tc_eval_orig, ks_eval_orig,reward_orig  = rollout(ns,200,Ca_des,T_des,original_policy)
 
-Ca_eval_DR, T_eval_DR, Tc_eval_DR, ks_eval_DR, reward_DR  = rollout(ns,50,Ca_des,T_des,DR_policy)
+Ca_eval_DR, T_eval_DR, Tc_eval_DR, ks_eval_DR, reward_DR  = rollout(ns,200,Ca_des,T_des,DR_policy)
 
-plt.hist(reward_DR, bins=50, alpha=0.5, label='DR Policy')
-plt.hist(reward_orig, bins=50, alpha=0.5, label='Original Policy')
-plt.xlabel('Reward')
-plt.ylabel('Frequency')
-plt.title('Histogram of Rewards')
-plt.legend()
-plt.show()
+
+def hist_plot(reward_DR,reward_orig):
+  plt.rcParams['text.usetex'] = 'True'
+  fig, ax = plt.subplots(figsize=(10, 6))
+  ax.grid(True)
+  ax.set_axisbelow(True)  # Draw grid lines behind other graph elements
+  ax.hist(reward_DR, bins=30, alpha=0.7, label='DR Policy', color='tab:red',density = True)
+  ax.hist(reward_orig, bins=30, alpha=0.7, label='Original Policy', color='tab:blue',density = True)
+  ax.set_xlabel('Return', fontsize=14)
+  ax.set_ylabel('Density', fontsize=14)
+  ax.set_title('Histogram of Return', fontsize=16)
+  ax.legend(fontsize=12)
+  plt.show()
+print('Mean Reward DR:',np.mean(reward_DR),'Mean Reward Original',np.mean(reward_orig))
+print('std Reward DR:',np.std(reward_DR),'std Reward Original',np.std(reward_orig))
+hist_plot(reward_DR,reward_orig)
