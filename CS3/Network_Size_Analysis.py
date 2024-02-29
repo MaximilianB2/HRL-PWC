@@ -348,46 +348,56 @@ max_iter = 30
 evals_rs = 15
 n_particles = 5
 reps = 3
-# networks = np.array(([64,64,1],[32,32,1]))#np.array(([256,256,1],[128,128,1]))
+networks = np.array(([256,256,0],[128,128,0],[64,64,0],[32,32,0]))#np.array(([256,256,1],[128,128,1]))
 # td = np.zeros((2,max_iter*n_particles+evals_rs+30,reps,networks.shape[0]))
 
 # for i, net in enumerate(networks):
 #   td[:,:,:,i] = policy_training(net[0],net[1],net[2],reps,max_iter,n_particles,evals_rs)
 
 
-# np.save('training_data_2202_64_32.npy',td)
+#np.save('training_data_2layers_2602.npy',td)
 tdbig = np.load('training_data_2202.npy')
 tdsmall = np.load('training_data_2202_64_32.npy')
-td = np.zeros((2,max_iter*n_particles+evals_rs+30,reps,4))
-td[:,:,:,:2] = tdbig
-td[:,:,:,2:] = tdsmall
+td_3layers = np.zeros((2,max_iter*n_particles+evals_rs+30,reps,4))
+td_3layers[:,:,:,:2] = tdbig
+td_3layers[:,:,:,2:] = tdsmall
+td_2layers = np.load('training_data_2layers_2602.npy')
 colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan', 'tab:blue', 'tab:orange']
 labels = ['256','128','64','32']
+
+
 def learning_curve(td):
   n_networks = 4
   # plt.rcParams['text.usetex'] = 'True'
   # episodic learning curve
   fig, ax = plt.subplots(1,1)
   ep = np.linspace(0, len(td[0,:,0,0]), len(td[0,:,0,0]))
-  for n_i in range(n_networks):
-    ax.plot(ep,np.median(td[0,:,:,n_i]*-1, axis = 1), color = colors[n_i], label = labels[n_i])
+  for n_i in range(1,3):
+    ax.plot(ep,np.median(td[0,:,:,n_i]*-1, axis = 1), color = colors[n_i], label = '2 layers '+labels[n_i])
    # ax.fill_between(ep,np.min(td[0,:,:,n_i]*-1, axis = 1),np.max(td[0,:,:,n_i]*-1,axis = 1), alpha = 0.2, edgecolor = 'none',color = colors[n_i])
   ax.set_xlabel('Episodes')
   ax.set_ylabel('Reward')
   ax.set_ylim(-500,0)
+  ax.set_title('Episodic Learning Curve')
   ax.legend()
+  #fig.savefig('2_Layers_Eps.pdf')
   plt.show()
   fig, ax = plt.subplots(1,1)
   t = np.linspace(0,np.max(td[1,:,:,:]),len(td[0,:,0,0]))
-  for n_i in range(n_networks):
-    ax.plot(np.median(td[1,:,:,n_i],axis= 1),np.median(td[0,:,:,n_i]*-1, axis = 1), color = colors[n_i], label = labels[n_i])
+
+  for n_i in range(1,3):
+    ax.plot(np.median(td[1,:,:,n_i],axis= 1),np.median(td[0,:,:,n_i]*-1, axis = 1), color = colors[n_i], label = '2 layers '+ labels[n_i])
     #ax.fill_between(np.median(td[1,:,:,n_i],axis= 1),np.min(td[0,:,:,n_i]*-1, axis = 1),np.max(td[0,:,:,n_i]*-1,axis = 1), alpha = 0.2, edgecolor = 'none',color = colors[n_i])
   ax.set_xlabel('Time (s)')
   ax.set_ylim(-500,0)
   ax.set_ylabel('Reward')
+  ax.set_title('Time Learning Curve')
   ax.legend()
+  #fig.savefig('2_Layers_Time.pdf')
   plt.show()
 
-  
+for i in range(4):
+    print(f'2 layers & {labels[i]} neurons per fc layer had a final return of {np.median(td_2layers[0,-1,:,i])}')
+    print(f'3 layers & {labels[i]} neurons per fc layer had a final return of {np.median(td_3layers[0,-1,:,i])})')
 # time learning curve
-learning_curve(td)
+# learning_curve(td)

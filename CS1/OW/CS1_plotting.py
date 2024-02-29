@@ -50,6 +50,7 @@ best_policy = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 
 best_policy.load_state_dict(torch.load('best_policy_0502.pth'))
 ns = 120
 env = reactor_class(test = True,ns = 120)
+
 Ca_des = [0.87 for i in range(int(2*ns/5))] + [0.91 for i in range(int(ns/5))] + [0.85 for i in range(int(2*ns/5))]                     
 T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
 

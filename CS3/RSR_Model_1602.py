@@ -33,7 +33,7 @@ class RSR(gym.Env):
     self.SP = np.array([[21 for i in range(int(ns/2))] + [21 for i in range(int(ns/2))],[21 for i in range(int(ns/2))] + [21 for i in range(int(ns/2))],[21 for i in range(int(ns/2))] + [21 for i in range(int(ns/2))]])
     self.x0 = copy.deepcopy(np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP[0,0],self.SP[1,0],self.SP[2,0]]))
     self.e_history = []
-
+    
   def reset(self, seed = None):
     if self.test:
       self.F0 = np.array([[1,2.7]])

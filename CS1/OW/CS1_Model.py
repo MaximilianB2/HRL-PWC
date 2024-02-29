@@ -9,7 +9,7 @@ def PID(Ks, x, x_setpoint, e_history):
 
     # K gains
     KpCa = Ks[0]; KiCa = Ks[1]; KdCa = Ks[2]
-    KpT  = Ks[3]; KiT  = Ks[4]; KdT  = Ks[5]; Kb = Ks[6]
+    Kb = Ks[3]
     # setpoint error
 
     e = x_setpoint - x
@@ -17,13 +17,25 @@ def PID(Ks, x, x_setpoint, e_history):
     #   e = x - x_setpoint
     # control action
 
-    u = KpT *e[1] + KiT *sum(e_history[:,1]) + KdT *(e[1]-e_history[-1,1])
-    u -= KpCa*e[0] + KiCa*sum(e_history[:,0]) + KdCa*(e[0]-e_history[-1,0])
+    
+    u = KpCa*e[0] + (KpCa/KiCa)*sum(e_history[:,0]) + KpCa*KdCa*(e[0]-e_history[-1,0])
     u += Kb
-    u = min(max(u,293),303)
+    u = min(max(u,290),303)
 
 
     return u
+def PID_velocity(Ks,x,x_setpoint,e_history,u_prev,ts,s_hist):
+    # K gains
+    dt = ts[1] - ts[0]
+    KpCa = Ks[0]; KiCa = Ks[1]; KdCa = Ks[2]
+    e = x_setpoint - x
+   
+    
+    u = u_prev[-1] + KpCa*(e[0] - e_history[-1,0]) + (KpCa/KiCa)*e[0]*dt - KpCa*KdCa*(e[0]-2*e_history[-1,0]+e_history[-2,0])/dt
+    
+    u = min(max(u,290),303)
+    return u
+
 
 def cstr_CS1(x,t,u,Tf,Caf,k0,UA):
 
@@ -59,7 +71,11 @@ def cstr_CS1(x,t,u,Tf,Caf,k0,UA):
 
 # Create a gym environment
 class reactor_class(gym.Env):
-  def __init__(self,ns,test = False, DR = False,robust_test = False):
+  def __init__(self,ns,test = False, DR = False,robust_test = False,PID_pos = False, PID_vel = False,DS = False):
+    self.DS = DS
+    self.PID_pos = PID_pos
+    self.PID_vel = PID_vel
+  
     self.ns = ns 
     self.test = test
     self.DR = DR
@@ -77,13 +93,13 @@ class reactor_class(gym.Env):
     T_des4  = [320 for i in range(int(ns/2))] + [340 for i in range(int(ns/2))]
     if self.test:
       self.disturb = True
-      Ca_des1 = [0.87 for i in range(int(2*ns/5))] + [0.91 for i in range(int(ns/5))] + [0.85 for i in range(int(2*ns/5))]                     
+      Ca_des1 = [0.95 for i in range(int(ns/3))] + [0.9 for i in range(int(ns/3))] + [0.85 for i in range(int(ns/3))]     
       T_des1  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
        
       
     
     self.observation_space = spaces.Box(low = np.array([.70, 315,.70, 315,0.75, 320]),high= np.array([0.95,340,0.95,340,0.95,340]))
-    self.action_space = spaces.Box(low = np.array([0,0,0,0,0,0,0]),high= np.array([1]*7))
+    self.action_space = spaces.Box(low = np.array([0,0,0,0]),high= np.array([1]*4))
 
 
     Ca_disturb = [0.8 for i in range(ns)]
@@ -102,7 +118,7 @@ class reactor_class(gym.Env):
     self.Caf  = 1     # Feed Concentration (mol/m^3)
 
     # Time Interval (min)
-    self.t = np.linspace(0,25,ns)
+    self.t = np.linspace(0,50,ns)
 
     # Store results for plotting
     self.Ca = np.ones(len(self.t)) * self.Ca_ss
@@ -149,15 +165,19 @@ class reactor_class(gym.Env):
       self.disturb = False
     self.u_history = []
     self.e_history = []
-    self.ts      = [self.t[self.i],self.t[self.i+1]]
+    self.s_history = []
+    self.ts = [self.t[self.i],self.t[self.i+1]]
     self.state_norm = (self.state -self.observation_space.low)/(self.observation_space.high - self.observation_space.low)
     return self.state_norm,{}
 
   def step(self, action_policy):
-    if self.i % 5 == 0:
+    if self.DS:
+       self.u_DS = action_policy
+    if self.i % 1 == 0:
        self.action = action_policy
     Ca_des = self.SP[self.SP_i,0][self.i]
-    T_des = self.SP[self.SP_i,1][self.i]   
+    T_des = self.SP[self.SP_i,1][self.i]  
+     
     self.state,rew = self.reactor(self.state,self.action,Ca_des,T_des)
     self.i += 1
     if self.i == self.ns:
@@ -187,31 +207,33 @@ class reactor_class(gym.Env):
 
     Ca = state[0]
     T  = state[1]
-
-    if self.disturb and self.i > int(10/120)*self.ns and self.i < int(30/120)*self.ns:
-      self.Tf = 360
-    else:
-       self.Tf = 350  
-   
+  
     x_sp    = np.array([Ca_des,T_des])
     
    
     Ks = action #Ca, T, u, Ca setpoint and T setpoint
     #Adjust bounds from relu
-
-    for ks_i in range(0,3):
-        Ks[ks_i] = (Ks[ks_i])*1
+    if not self.DS:
+      for ks_i in range(0,3):
+          Ks[ks_i] = (Ks[ks_i])*1
+          
         
-    for ks_i in range(3,6):
-        Ks[ks_i] = (Ks[ks_i])*1
-       
-    Ks[6] = (Ks[ks_i]) + 293
+      Ks[3] = (Ks[ks_i]) + 293
+      if self.PID_pos:
+        if self.i == 0:
+            u  = PID(Ks, state[0:2], x_sp, np.array([[0,0]]))
+        else:
+            u  = PID(Ks,state[0:2], x_sp, np.array(self.e_history))
 
-    if self.i == 0:
-        u  = PID(Ks, state[0:2], x_sp, np.array([[0,0]]))
-    else:
-        u  = PID(Ks,state[0:2], x_sp, np.array(self.e_history))
+      if self.PID_vel:
+        if self.i < 2:
+          u = 295
+        else:
+          u =  PID_velocity(Ks,state[0:2], x_sp, np.array(self.e_history),self.u_history,self.ts,np.array(self.s_history))
+    if self.DS:
+      u = self.u_DS
     # simulate system
+
     y       = odeint(cstr_CS1,state[0:2],self.ts,args=(u,self.Tf,self.Caf,k0,UA))
 
     # add process disturbance
@@ -226,8 +248,8 @@ class reactor_class(gym.Env):
     state_plus[4]   = Ca_des
     state_plus[5]   = T_des
     # compute tracking error
-    e  = x_sp-state_plus[0:2]
-    self.e_history.append((x_sp-state_plus[0:2]))
+    e  = x_sp-state[0:2]
+    self.e_history.append((x_sp-state[0:2]))
     #Penalise control action magnitude
     u_mag = np.abs(np.array(u-293))/10 #295 is lower bound of jacket temperature
     u_mag = u_mag/10
@@ -239,8 +261,9 @@ class reactor_class(gym.Env):
     
    
     self.u_history.append(u)
+    self.s_history.append(state[0:2])
     #Compute reward (squared distance + scaled)
   
-    r_x = np.abs(e[0])/0.2+np.abs(e[1])/15 + u_mag + u_cha
+    r_x = np.abs(e[0])/0.2 + u_mag + u_cha
     
     return state_plus, -r_x
