@@ -26,7 +26,7 @@ class Net(torch.nn.Module):
     self.device   = torch.device("cpu")
 
     self.input_size = 6 #State size: Ca, T, Ca setpoint and T setpoint
-    self.output_sz  = 7 #Output size: Reactor Ks size
+    self.output_sz  = 4 #Output size: Reactor Ks size
     self.n_layers = torch.nn.ModuleList()
     self.hs1        = n_fc1                                    # !! parameters
     self.hs2        = n_fc2                                      # !! parameter
@@ -75,25 +75,25 @@ def criterion(policy,SP,ns,k0,UA,env):
   p_list.append(policy)
   return r_tot
 
-policy = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1 )
-env = reactor_class(test = False,ns = 120)
+policy = Net(n_fc1 = 128,n_fc2 = 128,activation = torch.nn.ReLU,n_layers = 1 )
+env = reactor_class(test = False,ns = 240,PID_vel= True)
 #Training Loop Parameters
 k0     = 7.2e10 # Pre-exponential factor (1/sec)
 UA     = 5e4    # U -Heat Transfer Coefficient (W/m^2-K) A -Area - (m^2)
 old_swarm  = 1e8
 new_swarm = 0
 tol = 0.01
-ns = 120
-Ca_des1 = [0.8 for i in range(int(ns/2))] + [0.9 for i in range(int(ns/2))]
+ns = 240
+Ca_des1 = [0.95 for i in range(int(ns/2))] + [0.85 for i in range(int(ns/2))]
 T_des1  = [330 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
 
-Ca_des2 = [0.7 for i in range(int(ns/2))] + [0.9 for i in range(int(ns/2))]
+Ca_des2 = [0.9 for i in range(int(ns/2))] + [0.95 for i in range(int(ns/2))]
 T_des2  = [340 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
 
-Ca_des3 = [0.9 for i in range(int(ns/2))] + [0.8 for i in range(int(ns/2))]
+Ca_des3 = [0.95 for i in range(int(ns/2))] + [0.8 for i in range(int(ns/2))]
 T_des3  = [320 for i in range(int(ns/2))] + [330 for i in range(int(ns/2))]
 
-Ca_des4 = [0.9 for i in range(int(ns/2))] + [0.7 for i in range(int(ns/2))]
+Ca_des4 = [0.9 for i in range(int(ns/2))] + [0.85 for i in range(int(ns/2))]
 T_des4  = [320 for i in range(int(ns/2))] + [340 for i in range(int(ns/2))]
 
 Ca_disturb = [0.8 for i in range(ns)]
@@ -157,4 +157,4 @@ while i < max_iter and abs(best_reward - old_swarm[i]) > tol :
 print('Finished optimisation')
 print('Best reward:', best_reward)
 
-torch.save(best_policy.state_dict(), 'best_policy_DFO_2002.pth')
+torch.save(best_policy.state_dict(), 'best_policy_DFO_Vel_002.pth')

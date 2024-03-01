@@ -2,7 +2,7 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 from scipy.integrate import odeint
-
+import copy
 
 
 def PID(Ks, x, x_setpoint, e_history):
@@ -80,32 +80,30 @@ class reactor_class(gym.Env):
     self.test = test
     self.DR = DR
     self.robust_test = robust_test
-    Ca_des1 = [0.8 for i in range(int(ns/2))] + [0.9 for i in range(int(ns/2))]
+    Ca_des1 = [0.95 for i in range(int(ns/2))] + [0.85 for i in range(int(ns/2))]
     T_des1  = [330 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
 
-    Ca_des2 = [0.7 for i in range(int(ns/2))] + [0.9 for i in range(int(ns/2))]
+    Ca_des2 = [0.9 for i in range(int(ns/2))] + [0.95 for i in range(int(ns/2))]
     T_des2  = [340 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
 
-    Ca_des3 = [0.9 for i in range(int(ns/2))] + [0.8 for i in range(int(ns/2))]
+    Ca_des3 = [0.95 for i in range(int(ns/2))] + [0.8 for i in range(int(ns/2))]
     T_des3  = [320 for i in range(int(ns/2))] + [330 for i in range(int(ns/2))]
 
-    Ca_des4 = [0.9 for i in range(int(ns/2))] + [0.7 for i in range(int(ns/2))]
+    Ca_des4 = [0.9 for i in range(int(ns/2))] + [0.85 for i in range(int(ns/2))]
     T_des4  = [320 for i in range(int(ns/2))] + [340 for i in range(int(ns/2))]
     if self.test:
-      self.disturb = True
+      
       Ca_des1 = [0.95 for i in range(int(ns/3))] + [0.9 for i in range(int(ns/3))] + [0.85 for i in range(int(ns/3))]     
       T_des1  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
        
       
     
     self.observation_space = spaces.Box(low = np.array([.70, 315,.70, 315,0.75, 320]),high= np.array([0.95,340,0.95,340,0.95,340]))
-    self.action_space = spaces.Box(low = np.array([0,0,0,0]),high= np.array([1]*4))
+    self.action_space = spaces.Box(low = np.array([-1]*4),high= np.array([1]*4))
 
 
-    Ca_disturb = [0.8 for i in range(ns)]
-    T_disturb = [330 for i in range(ns)]
     
-    self.SP = np.array(([Ca_des1,T_des1],[Ca_des2,T_des2],[Ca_des3,T_des3],[Ca_des4,T_des4],[Ca_disturb,T_disturb]),dtype = object)
+    self.SP = np.array(([Ca_des1,T_des1],[Ca_des2,T_des2],[Ca_des3,T_des3],[Ca_des4,T_des4]),dtype = object)
 
     self.Ca_ss = 0.87725294608097
     self.T_ss  = 324.475443431599
@@ -171,27 +169,29 @@ class reactor_class(gym.Env):
     return self.state_norm,{}
 
   def step(self, action_policy):
+    
+    action_norm = (action_policy + 1) / 2
+
     if self.DS:
        self.u_DS = action_policy
-    if self.i % 1 == 0:
-       self.action = action_policy
+    if self.i % 5 == 0:
+       self.action = copy.deepcopy(action_norm)
     Ca_des = self.SP[self.SP_i,0][self.i]
     T_des = self.SP[self.SP_i,1][self.i]  
-     
+    
     self.state,rew = self.reactor(self.state,self.action,Ca_des,T_des)
     self.i += 1
     if self.i == self.ns:
-        if self.SP_i < 4:
+        if self.SP_i < 3:
           self.SP_i += 1
           self.i = 0
           self.state = np.array([self.Ca_ss,self.T_ss,self.Ca_ss,self.T_ss,Ca_des,T_des])
           self.u_history = []
           self.e_history = []
-          if self.SP_i == 4:
-            self.disturb = True
         else:
           self.done = True
-        
+          
+    
     self.state_norm = (self.state -self.observation_space.low)/(self.observation_space.high - self.observation_space.low)
     return self.state_norm,rew,self.done,False,{}
 
@@ -210,15 +210,18 @@ class reactor_class(gym.Env):
   
     x_sp    = np.array([Ca_des,T_des])
     
-   
-    Ks = action #Ca, T, u, Ca setpoint and T setpoint
+    
+    Ks = copy.deepcopy(action) #Ca, T, u, Ca setpoint and T setpoint
+    
     #Adjust bounds from relu
     if not self.DS:
-      for ks_i in range(0,3):
-          Ks[ks_i] = (Ks[ks_i])*1
+      Ks[0] = (Ks[0])*-200
+      Ks[1] = (Ks[1])*20 + 0.01
+      Ks[2] = (Ks[2])*10
           
-        
-      Ks[3] = (Ks[ks_i]) + 293
+      
+      Ks[3] = (Ks[3])*13 + 290
+     
       if self.PID_pos:
         if self.i == 0:
             u  = PID(Ks, state[0:2], x_sp, np.array([[0,0]]))
@@ -251,7 +254,7 @@ class reactor_class(gym.Env):
     e  = x_sp-state[0:2]
     self.e_history.append((x_sp-state[0:2]))
     #Penalise control action magnitude
-    u_mag = np.abs(np.array(u-293))/10 #295 is lower bound of jacket temperature
+    u_mag = np.abs(np.array(u-290))/10 #295 is lower bound of jacket temperature
     u_mag = u_mag/10
     # penalise change in control action
     if self.i == 0:

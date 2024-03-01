@@ -23,13 +23,14 @@ class RewardCallback(BaseCallback):
           self.rewards.append(sum(rewards))
         return True
 
-checkpoint_callback = CheckpointCallback(save_freq=100, save_path="./logs/SAC",
-                                         name_prefix="SAC_model_1602")
-env = reactor_class(test=False,ns = 120)
+checkpoint_callback = CheckpointCallback(save_freq=100, save_path="./logs/SAC_vel",
+                                         name_prefix="SAC_model_vel_1602")
+env = reactor_class(test=False,ns = 240,PID_vel=True)
 reward_callback = RewardCallback(check_freq=500)
-model = SAC("MlpPolicy", env, verbose=1,learning_rate=0.01)
-model.learn(3e4,callback = [reward_callback,checkpoint_callback])
-
+policy_kwargs = dict(net_arch=dict(pi=[128,128,128], qf=[128, 128,128]))
+model = SAC("MlpPolicy", env, verbose=1,learning_rate=0.01,device = 'cuda')
+model.learn(int(3e4))
+model.save('SAC_Vel_0103')
 SAC_Training_Rewards = reward_callback.rewards
 
 def learning_curve_plot(r):
