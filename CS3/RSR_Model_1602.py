@@ -8,6 +8,7 @@ class RSR(gym.Env):
     self.i = 0
     self.ns = ns 
     self.T  = 100
+    self.dt = self.T/self.ns
     self.Nx = 12
     self.plot = plot  
     self.test = test
@@ -28,21 +29,21 @@ class RSR(gym.Env):
     self.observation_space_actual = spaces.Box(low =np.array([20,20,20,20,20,20,20,20,20]) , high = np.array([21.5,21.5,21.5,22,22,22,21,21,21]))
     
     # Action Space
-    self.action_space = spaces.Box(low = -1, high = 1, shape = (16,))
+    self.action_space = spaces.Box(low = -1, high = 1, shape = (12,))
     self.action_space_unnorm = spaces.Box(low = np.array([8,8,0.67,8]), high = np.array([47,47,3,45]))
-    self.PID_space = spaces.Box(low = np.array([8,2,0,self.action_space_unnorm.low[0]-1,8,2,0.1,self.action_space_unnorm.low[1]-1,9,0,0.1,self.action_space_unnorm.low[2]-1,12,0,0,self.action_space_unnorm.low[3]+2]),
-                                 high = np.array([14,8,0.4,self.action_space_unnorm.low[0]+1,14,8,0.4,self.action_space_unnorm.low[1]+1,10,5,0.4,self.action_space_unnorm.low[2]+1,18,5,0.4,self.action_space_unnorm.low[3]+4] ),)
+    self.PID_space = spaces.Box(low = np.array([8,2,0,8,2,0.1,9,0,0.1,12,0,0]),
+                                high = np.array([14,8,0.4,14,8,0.4,10,5,0.4,18,5,0.4]))
     
-    self.SP_test = np.array([[22 for i in range(int(ns/3))] + [21.5 for i in range(int(ns/3))]+[21 for i in range(int(ns/3))],[22 for i in range(int(ns/3))] + [21.5 for i in range(int(ns/3))]+[21 for i in range(int(ns/3))],[22 for i in range(int(ns/3))] + [21.5 for i in range(int(ns/3))]+[21 for i in range(int(ns/3))]])
+    self.SP_test = np.array([[22 for i in range(int(ns/3))] + [20.5 for i in range(int(ns/3))]+[19.5 for i in range(int(ns/3))],[22 for i in range(int(ns/3))] + [20.5 for i in range(int(ns/3))]+[19.5 for i in range(int(ns/3))],[22 for i in range(int(ns/3))] + [20.5 for i in range(int(ns/3))]+[19.5 for i in range(int(ns/3))]])
     
     self.SP1 = np.array([[21.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))]])
     self.SP2 = np.array([[21 for i in range(int(ns/3))] + [22 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21 for i in range(int(ns/3))] + [22 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21 for i in range(int(ns/3))] + [22 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))]])
     self.SP3 =  np.array([[20.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[20 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[20 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))]])
     if self.test:
-      self.x0 = copy.deepcopy(np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP_test[0,0],self.SP_test[1,0],self.SP_test[2,0]]))
+      self.x0 = copy.deepcopy(np.array([21.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 21.5, 0.1139, 0.7779, 0.1082,self.SP_test[0,0],self.SP_test[1,0],self.SP_test[2,0]]))
       self.SP  = np.array([self.SP_test])
     else:
-      self.x0 = copy.deepcopy(np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP1[0,0],self.SP1[1,0],self.SP1[2,0]]))
+      self.x0 = copy.deepcopy(np.array([21.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 21.5, 0.1139, 0.7779, 0.1082,self.SP1[0,0],self.SP1[1,0],self.SP1[2,0]]))
       self.SP = np.array((self.SP1,self.SP2,self.SP3))
     self.e_history = []
     self.u_history = []
@@ -50,9 +51,9 @@ class RSR(gym.Env):
   def reset(self, seed = None):
     self.state_hist = np.zeros((self.ns+1,self.x0.shape[0]))
     if self.test:
-      self.state = np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP[0,0,0],self.SP[0,1,0],self.SP[0,2,0]])
+      self.state = np.array([21.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 21.5, 0.1139, 0.7779, 0.1082,self.SP[0,0,0],self.SP[0,1,0],self.SP[0,2,0]])
     else:
-      self.state = np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP[0,0,0],self.SP[0,1,0],self.SP[0,2,0]])
+      self.state = np.array([21.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 21.5, 0.1139, 0.7779, 0.1082,self.SP[0,0,0],self.SP[0,1,0],self.SP[0,2,0]])
     self.e_history = []
     self.u_history = []
     self.info['state'] = self.state[:self.Nx]
@@ -70,16 +71,16 @@ class RSR(gym.Env):
     
     if self.i % 5 == 0:
       self.action = action * (self.PID_space.high - self.PID_space.low) + self.PID_space.low
-    try:
-      self.state[:self.Nx] = self.integrate(self.action)
-      noise_percentage = 0.01
-      self.state[0] += np.random.uniform(-1,1)*noise_percentage
-      self.state[4] += np.random.uniform(-1,1)*noise_percentage
-      self.state[8] += np.random.uniform(-1,1)*noise_percentage     
-    except:
-      print('Integration Error')
-      rew = -1e5
-      self.done = True
+    # try:
+    self.state[:self.Nx] = self.integrate(self.action)
+    noise_percentage = 0.01
+    self.state[0] += np.random.uniform(-1,1)*noise_percentage
+    self.state[4] += np.random.uniform(-1,1)*noise_percentage
+    self.state[8] += np.random.uniform(-1,1)*noise_percentage     
+    # except:
+    #   print('Integration Error')
+    #   rew = -1e5
+    #   self.done = True
     rew = self.reward(self.state[:self.Nx])
     self.info['PID_Action'] = self.action
     self.i += 1
@@ -122,10 +123,10 @@ class RSR(gym.Env):
     self.e = np.array([Holdups])-self.SP[self.SP_i,:,self.i] 
     uk = np.zeros(5)
 
-    uk[0] = self.PID_F_R(PID_gains[0:4])
-    uk[1] = self.PID_F_M(PID_gains[4:8])
-    uk[2] = self.PID_B(PID_gains[8:12])
-    uk[3] = self.PID_D(PID_gains[12:16])
+    uk[0] = self.PID_F_R(PID_gains[0:3])
+    uk[1] = self.PID_F_M(PID_gains[3:6])
+    uk[2] = self.PID_B(PID_gains[6:9])
+    uk[3] = self.PID_D(PID_gains[9:12])
     uk[4] = 1.5
     self.u_history.append(uk)
     self.info['control_in'] = uk
@@ -133,25 +134,27 @@ class RSR(gym.Env):
     self.e_history.append(self.e[0]) 
     plant_func = self.casadi_model_func
     discretised_plant = self.discretise_model(plant_func,self.T/self.ns) 
-  
+
     xk = self.state[:self.Nx]
     Fk = discretised_plant(x0=xk, p=uk)
     self.info['state'] = Fk['xf'].full().flatten()   
     return Fk['xf'].full().flatten()
   
   def PID_F_R(self, PID_gains):
-    k_p = PID_gains[0]
-    k_i = PID_gains[1]    
-    k_d = PID_gains[2]
-    k_b = PID_gains[3] 
-    e_history = np.array(self.e_history)
-    e = self.e[0]
-    if self.i == 0:
-      e_history = np.zeros((1,3))
     
-    u = k_p *e[0] + k_i *sum(e_history[:,0]) + k_d *(e[0]-e_history[-1,0])
-  
-    u += k_b
+    k_p = PID_gains[0]
+    k_i = PID_gains[1] + 1e-5    
+    k_d = PID_gains[2]
+
+    e_history = np.array(self.e_history)
+    u_history = np.array(self.u_history)
+    e = self.e[0]
+    if self.i < 2:
+      e_history = np.zeros((1,3))
+      u = (self.action_space_unnorm.high[0] - self.action_space_unnorm.low[0])/2
+    else:
+      u = u_history[-1,0] + k_p*(e[0] - e_history[-1,0]) + (k_p/k_i)*e[0]*self.dt - k_p*k_d*(e[0]-2*e_history[-1,0]+e_history[-2,0])/self.dt
+ 
   
     u = np.clip(u, self.action_space_unnorm.low[0], self.action_space_unnorm.high[0])
 
@@ -159,46 +162,57 @@ class RSR(gym.Env):
   
   def PID_F_M(self, PID_gains):
     k_p = PID_gains[0]
-    k_i = PID_gains[1]    
+    k_i = PID_gains[1] + 1e-5    
     k_d = PID_gains[2]
-    k_b = PID_gains[3] 
+    
     e_history = np.array(self.e_history)
+    u_history = np.array(self.u_history)
     e = self.e[0]
     
-    if self.i == 0:
+    if self.i < 2:
       e_history = np.zeros((1,3))
-    u = k_p *e[1] + k_i *sum(e_history[:,1]) + k_d *(e[1]-e_history[-1,1])
-    u += k_b
+      u = (self.action_space_unnorm.high[1] - self.action_space_unnorm.low[1])/2
+    else:
+      u = u_history[-1,1] + k_p*(e[1] - e_history[-1,1]) + (k_p/k_i)*e[1]*self.dt - k_p*k_d*(e[1]-2*e_history[-1,1]+e_history[-2,1])/self.dt
+    
     u = np.clip(u, self.action_space_unnorm.low[1], self.action_space_unnorm.high[1])
   
     return u
      
   def PID_B(self, PID_gains):
     k_p = PID_gains[0]
-    k_i = PID_gains[1]    
+    k_i = PID_gains[1] + 1e-5    
     k_d = PID_gains[2]
-    k_b = PID_gains[3] 
+
     e_history = np.array(self.e_history)
+    u_history = np.array(self.u_history)
+
     e = self.e[0]
-    if self.i == 0:
+    if self.i < 2:
       e_history = np.zeros((1,3))
-    u = k_p *e[2] + k_i *sum(e_history[:,2]) + k_d *(e[2]-e_history[-1,2])
-    u += k_b
+      u = (self.action_space_unnorm.high[2] - self.action_space_unnorm.low[2])/2
+    else:
+       u = u_history[-1,2] + k_p*(e[2] - e_history[-1,2]) + (k_p/k_i)*e[2]*self.dt - k_p*k_d*(e[2]-2*e_history[-1,2]+e_history[-2,2])/self.dt
     u = np.clip(u, self.action_space_unnorm.low[2], self.action_space_unnorm.high[2])
+    
     return u
     
   def PID_D(self, PID_gains):
     k_p = PID_gains[0]
-    k_i = PID_gains[1]    
+    k_i = PID_gains[1] + 1e-5    
     k_d = PID_gains[2]
-    k_b = PID_gains[3] 
-    e_history = np.array(self.e_history)
-    e = self.e[0]
-    if self.i == 0:
-      e_history = np.zeros((1,3))
-    u = k_p *e[2] + k_i *sum(e_history[:,2]) + k_d *(e[2]-e_history[-1,2])
     
-    u += k_b
+    e_history = np.array(self.e_history)
+    u_history = np.array(self.u_history)
+    e = self.e[0]
+    if self.i < 2:
+      e_history = np.zeros((1,3))
+      u = (self.action_space_unnorm.high[3] - self.action_space_unnorm.low[3])/2
+    else:
+      u = u_history[-1,3] + k_p*(e[2] - e_history[-1,2]) + (k_p/k_i)*e[2]*self.dt - k_p*k_d*(e[2]-2*e_history[-1,2]+e_history[-2,2])/self.dt
+    
+    
+    
     u = np.clip(u, self.action_space_unnorm.low[3], self.action_space_unnorm.high[3])
     return u
   def casadify(self, model, sym_x, sym_u):

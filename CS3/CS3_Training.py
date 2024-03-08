@@ -69,26 +69,26 @@ def plot_simulation(states, actions, control_inputs, ns):
     axs[0,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.5),
           ncol=3,frameon=False)
     #PID Action Plots
-    for i in range(0,4):
+    for i in range(0,3):
         axs[1,0].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
         axs[1,0].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
     axs[1,0].set_ylabel('$F_R$ PID Action')
     axs[1,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
           ncol=4,frameon=False)
-    for i in range(4,8):
+    for i in range(3,6):
         axs[1,1].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
         axs[1,1].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
     axs[1,1].set_ylabel('$F_M$ PID Action')
     axs[1,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
           ncol=4,frameon=False)
-    for i in range(8,12):
+    for i in range(6,9):
         axs[2,0].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
         axs[2,0].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
     axs[2,0].set_ylabel('$B$ PID Action')
     axs[2,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
           ncol=4,frameon=False)
     
-    for i in range(12,16):
+    for i in range(9,12):
         axs[2,1].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
         axs[2,1].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
     axs[2,1].set_ylabel('$D$ PID Action')
@@ -208,7 +208,7 @@ class Net(torch.nn.Module):
     self.device   = torch.device("cpu")
     self.deterministic = deterministic  
     self.input_size = 9 #State size: Ca, T, Ca setpoint and T setpoint
-    self.output_sz  = 16 #Output size: Reactor Ks size
+    self.output_sz  = 12 #Output size: Reactor Ks size
     self.n_layers = torch.nn.ModuleList()
     self.hs1        = n_fc1                                    # !! parameters
     self.hs2        = n_fc2                                      # !! parameter
@@ -324,16 +324,16 @@ def criterion(policy,ns):
 # print('Saving Best Policy...')
 # torch.save(best_policy.state_dict(), 'DFO_SP_0703')
 # best_policy_sd = best_policy.state_dict()
-# # best_policy_sd = torch.load('DFO_best_policy_wNoise_wF0_1602.pth')
-# policy_plot = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1,deterministic = True) # Deterministic for plotting
-# policy_plot.load_state_dict(best_policy_sd)
-# print('Plotting Best Policy...')
+best_policy_sd = torch.load('DFO_SP_0703.pth')
+policy_plot = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1,deterministic = True) # Deterministic for plotting
+policy_plot.load_state_dict(best_policy_sd)
+print('Plotting Best Policy...')
 
-# env = RSR(ns,test=True,plot=False)
-# s,a,r,c = rollout_DFO(ns,policy_plot,10,True)
+env = RSR(ns,test=True,plot=False)
+s,a,r,c = rollout_DFO(ns,policy_plot,10,True)
 
 
-# plot_simulation(s,a,c,ns)
+plot_simulation(s,a,c,ns)
 
 # Ks = np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
 # s,a,r,c = rollout_test(ns,Ks)
@@ -383,12 +383,12 @@ def criterion(policy,ns):
 # plot_simulation(s, a, c, ns)
 
 
-# bounds = [(-1,1)]*16
-# result_vel =  differential_evolution(rollout_test,popsize=1,bounds=bounds,args= (ns, True),maxiter = 100,disp = True)
+# bounds = [(-1,1)]*12
+# result_vel =  differential_evolution(rollout_test,polish = False, popsize= 1,bounds=bounds,args= (ns, True),maxiter = 100,disp = True)
 
 # np.save('GS_cons.npy',result_vel.x)
 # Ks = result_vel.x
-Ks = np.load('GS_cons.npy')
-s,a,r,c = rollout_test(Ks,ns,False)
+# Ks = np.load('GS_cons.npy')
+# s,a,r,c = rollout_test(Ks,ns,False)
 
-plot_simulation(s,a,c,ns)
+# plot_simulation(s,a,c,ns)
