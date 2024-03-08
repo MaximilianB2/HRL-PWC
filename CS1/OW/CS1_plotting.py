@@ -7,10 +7,11 @@ import torch
 import torch.nn.functional as F
 
 class Net(torch.nn.Module):
-  def __init__(self, n_fc1, n_fc2, activation,n_layers,**kwargs):
+  def __init__(self, n_fc1, n_fc2, activation,n_layers,deterministic,**kwargs):
     super(Net, self).__init__()
 
     # Unpack the dictionary
+    self.deterministic = deterministic
     self.args     = kwargs
     self.dtype    = torch.float
     self.use_cuda = torch.cuda.is_available()
@@ -41,12 +42,14 @@ class Net(torch.nn.Module):
     log_std = self.output_std(y) 
     dist = torch.distributions.Normal(mu, log_std.exp()+ 1e-6)
     out = dist.sample()                                         
+    if self.deterministic:
+      y = mu
     y = F.tanh(out) #[-1,1]
    
-
+    
     return y
 
-best_policy = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1 )
+best_policy = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1,deterministic=True)
 best_policy.load_state_dict(torch.load('best_policy_DFO_Vel_002.pth'))
 ns = 240
 env = reactor_class(test = True,ns = 240,PID_vel=True)
@@ -60,7 +63,7 @@ Ca_eval_PG = np.zeros((ns,reps))
 T_eval_PG = np.zeros((ns,reps))
 Tc_eval_PG = np.zeros((ns,reps))
 ks_eval_PG = np.zeros((4,ns,reps))
-
+r_eval = np.zeros((1,reps))
 SP = np.array([Ca_des,T_des])
 for r_i in range(reps):
   s_norm,_ = env.reset()
@@ -78,7 +81,7 @@ for r_i in range(reps):
   a_sim[2] = (a_sim[2])*10
       
   
-  a_sim[3] = (a_sim[3]) + 290
+  a_sim[3] = (a_sim[3])*13 + 290
   r_tot = 0
   for i in range(1,ns):
     
@@ -108,12 +111,13 @@ for r_i in range(reps):
     T_eval_PG[i,r_i] = s[1]
     
     Tc_eval_PG[i,r_i] = env.u_history[-1]
-print(r_tot)
+  r_eval[:,r_i] = r_tot
+print(np.mean(r_eval),'PG')
 Ca_eval_EA = np.zeros((ns,reps))
 T_eval_EA = np.zeros((ns,reps))
 Tc_eval_EA = np.zeros((ns,reps))
 ks_eval_EA = np.zeros((4,ns,reps))
-
+r_eval = np.zeros((1,reps))
 SP = np.array([Ca_des,T_des])
 for r_i in range(reps):
   s_norm,_ = env.reset()
@@ -159,7 +163,8 @@ for r_i in range(reps):
     T_eval_EA[i,r_i] = s[1]
     
     Tc_eval_EA[i,r_i] = env.u_history[-1]
-print(r_tot)
+  r_eval[:,r_i] = r_tot
+print(np.mean(r_eval),'EA')
 def rollout(Ks,reps):
   ns = 240
   env = reactor_class(test = True, ns = 240, PID_vel = True)
@@ -199,13 +204,13 @@ def rollout(Ks,reps):
       T_eval[i,r_i] = s[1]
       Tc_eval[i,r_i] = env.u_history[-1]
     r_eval[:,r_i] = r_tot
-  r = -1*np.mean(r_tot)
-  print(r)
+  r = np.mean(r_tot)
+  print(r,'Const')
   return Ca_eval, T_eval, Tc_eval, ks_eval
 def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_EA, T_dat_EA, Tc_dat_EA,ks_eval_EA,Ca_dat_const, T_dat_const, Tc_dat_const, ks_eval_const,SP,ns):
   plt.rcParams['text.usetex'] = 'False'
   t = np.linspace(0,25,ns)
-  fig, axs = plt.subplots(3, 1, figsize=(10, 12))
+  fig, axs = plt.subplots(1,3,figsize=(20, 7))
   labels = ['$Ca_{k_p}$','$Ca_{k_i}$','$Ca_{k_d}$','$T_{k_p}$','$T_{k_i}$','$T_{k_d}$']
   col = ['tab:orange','tab:red','tab:blue','tab:orange','tab:red','tab:blue']
   col_fill = ['tab:orange','tab:red','tab:blue','tab:orange','tab:red','tab:blue']
@@ -240,22 +245,25 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_EA, T_
   axs[2].set_xlabel('Time (min)')
   axs[2].legend(loc='best')
   axs[2].set_xlim(min(t), max(t))
-  # plt.savefig('velocity_vs_pos_states.pdf')
+  plt.savefig('const_vs_RL_states.pdf')
   plt.show()
 
-  fig, axs = plt.subplots(3, 1, figsize=(10, 12))
+  fig, axs = plt.subplots(1,2,figsize=(14, 5))
   axs[0].set_title('EA PID Parameters')
   
   axs[0].step(t, np.median(ks_eval_EA[0,:,:],axis=1), col[0],where = 'post', lw=1,label = labels[0])
+  axs[0].step(t, np.median(ks_eval_const[0,:,:],axis=1), col[0],linestyle = 'dashed',where = 'post', lw=1,label = 'Constant ' + labels[0])
     # plt.gca().fill_between(t, np.min(ks_eval_EA[ks_i,:,:],axis=1), np.max(ks_eval_EA[ks_i,:,:],axis=1),
     #                         color=col_fill[ks_i], alpha=0.2)
   axs[0].set_ylabel('Ca PID Parameter (EA)')
   axs[0].set_xlabel('Time (min)')
   axs[0].legend(loc='best')
   axs[0].set_xlim(min(t), max(t))
-   
+
   for ks_i in range(1,3):
     axs[1].step(t, np.median(ks_eval_EA[ks_i,:,:],axis=1), col[ks_i],where = 'post', lw=1,label = labels[ks_i])
+
+    axs[1].step(t, np.median(ks_eval_const[ks_i,:,:],axis=1), col[ks_i],linestyle = 'dashed',where = 'post', lw=1,label = 'Constant ' + labels[ks_i])
     # plt.gca().fill_between(t, np.min(ks_eval_EA[ks_i,:,:],axis=1), np.max(ks_eval_EA[ks_i,:,:],axis=1),
     #                         color=col_fill[ks_i], alpha=1.2)
   axs[1].set_ylabel('Ca PID Parameter (EA)')
@@ -264,21 +272,18 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_EA, T_
   axs[1].set_xlim(min(t), max(t))
   
     
-  axs[2].step(t, np.median(ks_eval_EA[3,:,:],axis=1), 'c-',where = 'post', lw=1,label = 'Baseline Ks')
-  # axs[2].gca().fill_between(t, np.min(ks_eval_EA[6,:,:],axis=1), np.max(ks_eval_EA[6,:,:],axis=1),
-  #                           color='c', alpha=0.2)
-  axs[2].set_ylabel('Baseline PID Parameter (EA)')
-  axs[2].set_xlabel('Time (min)')
-  axs[2].legend(loc='best')
-  axs[2].set_xlim(min(t), max(t))
-  # plt.savefig('velocity_vs_pos_ks_pos.pdf')
+ 
+
+
+  plt.savefig('const_vs_RL_ks_EA.pdf')
   plt.show()
   
 
-  fig, axs = plt.subplots(3, 1, figsize=(10, 12))
+  fig, axs = plt.subplots(1,2,figsize=(14, 5))
   axs[0].set_title('PG PID Parameters')
 
   axs[0].step(t, np.median(ks_eval_PG[0,:,:],axis=1), col[0],where = 'post', lw=1,label = labels[0])
+  axs[0].step(t, np.median(ks_eval_const[0,:,:],axis=1), col[0],linestyle = 'dashed', where = 'post', lw=1,label = 'Constant ' + labels[0])
     # plt.gca().fill_between(t, np.min(ks_eval_PG[ks_i,:,:],axis=1), np.max(ks_eval_PG[ks_i,:,:],axis=1),color=col_fill[ks_i], alpha=0.2)
                             
   axs[0].set_ylabel('Ca PID Parameter (PG)')
@@ -287,6 +292,8 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_EA, T_
   axs[0].set_xlim(min(t), max(t))
   for ks_i in range(1,3):
     axs[1].step(t, np.median(ks_eval_PG[ks_i,:,:],axis=1), col[ks_i],where = 'post', lw=1,label = labels[ks_i])
+ 
+    axs[1].step(t, np.median(ks_eval_const[ks_i,:,:],axis=1), col[ks_i],linestyle = 'dashed',where = 'post', lw=1,label = 'Constant ' + labels[ks_i])
     # plt.gca().fill_between(t, np.min(ks_eval_PG[ks_i,:,:],axis=1), np.max(ks_eval_PG[ks_i,:,:],axis=1),color=col_fill[ks_i], alpha=0.2)
                             
   axs[1].set_ylabel('Ca PID Parameter (PG)')
@@ -294,19 +301,8 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_EA, T_
   axs[1].legend(loc='best')
   axs[1].set_xlim(min(t), max(t))
 
-
-
- 
-  axs[2].step(t, np.median(ks_eval_PG[3,:,:],axis=1), 'c-',where = 'post', lw=1,label = 'Baseline Ks')
-  # axs[2].gca().fill_between(t, np.min(ks_eval_PG[6,:,:],axis=1), np.max(ks_eval_PG[6,:,:],axis=1),color='c', alpha=0.2)
-                            
-  axs[2].set_ylabel('Baseline PID Parameter (velocity form)')
-  axs[2].set_xlabel('Time (min)')
-  axs[2].legend(loc='best')
-  axs[2].set_xlim(min(t), max(t))
-
   plt.tight_layout()
-  # plt.savefig('velocity_vs_pos_ks_vel.pdf')
+  plt.savefig('const_vs_RL_ksPG.pdf')
   plt.show()
 Ks_vel = np.load('GS_Global_vel_const.npy')
 

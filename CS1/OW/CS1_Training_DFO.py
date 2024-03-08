@@ -75,7 +75,7 @@ def criterion(policy,SP,ns,k0,UA,env):
   p_list.append(policy)
   return r_tot
 
-policy = Net(n_fc1 = 128,n_fc2 = 128,activation = torch.nn.ReLU,n_layers = 1 )
+policy = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1 )
 env = reactor_class(test = False,ns = 240,PID_vel= True)
 #Training Loop Parameters
 k0     = 7.2e10 # Pre-exponential factor (1/sec)

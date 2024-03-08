@@ -12,8 +12,10 @@ class RSR(gym.Env):
     self.plot = plot  
     self.test = test
     self.info = {'control_in':0,'PID_Action':0,'state':0}
+
     # Time Interval (min)
     self.t = np.linspace(0,self.T,self.ns)
+
     # Casadi Model
     self.sym_x = self.gen_casadi_variable(12, "x")
     self.sym_u = self.gen_casadi_variable(5, "u")    
@@ -22,34 +24,45 @@ class RSR(gym.Env):
     self.casadi_model_func = self.gen_casadi_function([self.sym_x, self.sym_u],[self.casadi_sym_model],
                                                     "model_func", ["x","u"], ["model_rhs"])
     # Observation Space
-    self.observation_space = spaces.Box(low = 0,high=1, shape = (10,))
-    self.observation_space_actual = spaces.Box(low =np.array([20,20,20,20,20,20,20,20,20,1]) , high = np.array([21.5,21.5,21.5,22,22,22,21,21,21,3.2]))
+    self.observation_space = spaces.Box(low = 0,high=1, shape = (9,))
+    self.observation_space_actual = spaces.Box(low =np.array([20,20,20,20,20,20,20,20,20]) , high = np.array([21.5,21.5,21.5,22,22,22,21,21,21]))
+    
     # Action Space
     self.action_space = spaces.Box(low = -1, high = 1, shape = (16,))
     self.action_space_unnorm = spaces.Box(low = np.array([8,8,0.67,8]), high = np.array([47,47,3,45]))
     self.PID_space = spaces.Box(low = np.array([8,2,0,self.action_space_unnorm.low[0]-1,8,2,0.1,self.action_space_unnorm.low[1]-1,9,0,0.1,self.action_space_unnorm.low[2]-1,12,0,0,self.action_space_unnorm.low[3]+2]),
                                  high = np.array([14,8,0.4,self.action_space_unnorm.low[0]+1,14,8,0.4,self.action_space_unnorm.low[1]+1,10,5,0.4,self.action_space_unnorm.low[2]+1,18,5,0.4,self.action_space_unnorm.low[3]+4] ),)
     
-    self.SP = np.array([[21 for i in range(int(ns/2))] + [21 for i in range(int(ns/2))],[21 for i in range(int(ns/2))] + [21 for i in range(int(ns/2))],[21 for i in range(int(ns/2))] + [21 for i in range(int(ns/2))]])
-    self.x0 = copy.deepcopy(np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP[0,0],self.SP[1,0],self.SP[2,0]]))
+    self.SP_test = np.array([[22 for i in range(int(ns/3))] + [21.5 for i in range(int(ns/3))]+[21 for i in range(int(ns/3))],[22 for i in range(int(ns/3))] + [21.5 for i in range(int(ns/3))]+[21 for i in range(int(ns/3))],[22 for i in range(int(ns/3))] + [21.5 for i in range(int(ns/3))]+[21 for i in range(int(ns/3))]])
+    
+    self.SP1 = np.array([[21.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))]])
+    self.SP2 = np.array([[21 for i in range(int(ns/3))] + [22 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21 for i in range(int(ns/3))] + [22 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21 for i in range(int(ns/3))] + [22 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))]])
+    self.SP3 =  np.array([[20.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[20 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[20 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))]])
+    if self.test:
+      self.x0 = copy.deepcopy(np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP_test[0,0],self.SP_test[1,0],self.SP_test[2,0]]))
+      self.SP  = np.array([self.SP_test])
+    else:
+      self.x0 = copy.deepcopy(np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP1[0,0],self.SP1[1,0],self.SP1[2,0]]))
+      self.SP = np.array((self.SP1,self.SP2,self.SP3))
     self.e_history = []
+    self.u_history = []
     
   def reset(self, seed = None):
-    if self.test:
-      self.F0 = np.array([[1,2.7]])
-    else:
-      self.F0 = np.array(([1.05,2.4],[1,2.6],[1.05,2.7]))
     self.state_hist = np.zeros((self.ns+1,self.x0.shape[0]))
-    self.state = np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP[0,0],self.SP[1,0],self.SP[2,0]])
+    if self.test:
+      self.state = np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP[0,0,0],self.SP[0,1,0],self.SP[0,2,0]])
+    else:
+      self.state = np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP[0,0,0],self.SP[0,1,0],self.SP[0,2,0]])
     self.e_history = []
+    self.u_history = []
     self.info['state'] = self.state[:self.Nx]
     self.i = 0
     self.done = False
     rl_state = [self.state[i] for i in [0, 4, 8,0, 4, 8,12,13,14]]
 
-    rl_state.append(self.F0[0,0])
+
     self.state_hist[self.i] = self.state
-    self.F0_i = 0
+    self.SP_i = 0
     self.norm_state = (rl_state - self.observation_space_actual.low) / (self.observation_space_actual.high-self.observation_space_actual.low)
     return self.norm_state, {}
   def step(self, action):
@@ -70,29 +83,25 @@ class RSR(gym.Env):
     rew = self.reward(self.state[:self.Nx])
     self.info['PID_Action'] = self.action
     self.i += 1
-    if self.i == self.ns and self.F0_i == 2:
+    if self.i == self.ns and self.SP_i == 2:
       self.done = True
     if self.i == self.ns and self.test:
       self.done = True
    
-    if self.i == self.ns and not self.test and not self.F0_i == 2:
-      self.F0_i += 1
+    if self.i == self.ns and not self.test and not self.SP_i == 2:
+      self.SP_i += 1
       self.state_hist = np.zeros((self.ns+1,self.x0.shape[0]))
-      self.state = np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP[0,0],self.SP[1,0],self.SP[2,0]])
+      self.state = np.array([20.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 20.5, 0.1139, 0.7779, 0.1082,self.SP[self.SP_i,0,0],self.SP[self.SP_i,1,0],self.SP[self.SP_i,2,0]])
       self.e_history = []
+      self.u_history = []
       self.i = 0
       rl_state = [self.state[i] for i in [0, 4, 8,0, 4, 8,12,13,14]]
-      rl_state.append(self.F0[self.F0_i,0])
       self.state_hist[self.i] = self.state
       rew = 0
 
     if self.i > 0:
       self.state_hist[self.i] = self.state
       rl_state = np.array([self.state[0],self.state[4],self.state[8],self.state_hist[self.i-1][0],self.state_hist[self.i-1][4],self.state_hist[self.i-1][8],self.state[12],self.state[13],self.state[14]])
-      if self.i < self.ns/3:
-        rl_state = np.append(rl_state,self.F0[self.F0_i,0])
-      else: 
-        rl_state = np.append(rl_state,self.F0[self.F0_i,1])
     
     self.norm_state = (rl_state - self.observation_space_actual.low) / (self.observation_space_actual.high-self.observation_space_actual.low)
   
@@ -102,7 +111,7 @@ class RSR(gym.Env):
   def reward(self, state):
     
     state = [state[i] for i in [0, 4, 8]]
-    error = np.sum((self.SP[:,self.i] - state)**2)
+    error = np.sum((self.SP[self.SP_i,:,self.i] - state)**2)
     
     return -error
      
@@ -110,19 +119,15 @@ class RSR(gym.Env):
     
     state = self.state[:self.Nx]
     Holdups = [state[i] for i in [0, 4, 8]]
-    self.e = np.array([Holdups])-self.SP[:,self.i] 
-   
+    self.e = np.array([Holdups])-self.SP[self.SP_i,:,self.i] 
     uk = np.zeros(5)
 
     uk[0] = self.PID_F_R(PID_gains[0:4])
     uk[1] = self.PID_F_M(PID_gains[4:8])
     uk[2] = self.PID_B(PID_gains[8:12])
     uk[3] = self.PID_D(PID_gains[12:16])
-    if self.i < self.ns/3:
-      uk[4] = self.F0[self.F0_i,0]
-    else: 
-      uk[4] = self.F0[self.F0_i,1]
-
+    uk[4] = 1.5
+    self.u_history.append(uk)
     self.info['control_in'] = uk
 
     self.e_history.append(self.e[0]) 

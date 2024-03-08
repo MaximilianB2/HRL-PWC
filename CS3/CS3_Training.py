@@ -7,8 +7,11 @@ import torch.nn.functional as F
 from stable_baselines3.common.callbacks import CheckpointCallback
 from typing import Callable
 from RSR_Model_1602 import RSR
+from torch_pso import ParticleSwarmOptimizer
+import copy
+from scipy.optimize import differential_evolution
 # Create Environment
-ns = 300
+ns = 600
 env = RSR(ns, test=False, plot=False)
 
 
@@ -25,12 +28,11 @@ def sample_local_params(params_prev, param_max, param_min):
 
 
 def plot_simulation(states, actions, control_inputs, ns):
-    plt.rcParams['text.usetex'] = 'True'
+   
     
     actions = np.array(actions)
     control_inputs = np.array(control_inputs)
-    SP = np.array([[21 for i in range(int(ns/2))] + [21 for i in range(int(ns/2))]]).reshape(ns,1)
-    SP_M = np.array([[21 for i in range(int(ns/2))] + [21 for i in range(int(ns/2))]]).reshape(ns,1)
+    SP = SP_M = env.SP_test[0,:]
     data = [np.array(states)[i,:,:] for i in [0,4,8,1,2,3,5,6,7,9,10,11]]
    
     titles = ['Level', 'Component Fractions', 'Actions', 'Control Inputs']
@@ -135,8 +137,9 @@ def rollout(ns,policy,reps):
     return states, actions, tot_reward,controls
 
 
-def rollout_test(ns,Ks):
-    env = RSR(ns,test=False,plot=False)
+def rollout_test(Ks, ns, opt):
+    reps = 1
+    env = RSR(ns,test=True,plot=False)
     s,_ = env.reset()
     done = False
     states = []
@@ -144,18 +147,25 @@ def rollout_test(ns,Ks):
     rewards = []
     controls = []
     tot_rew = 0
-    
-    while not done:
-        action = Ks
-        state, reward, done, _,control = env.step(action)
-        #un normalise state
-        state = state * (env.observation_space.high - env.observation_space.low) + env.observation_space.low
-        states.append(control['state'])
-        actions.append(control['PID_Action'])
-        rewards.append(reward)
-        controls.append(control['control_in'])
-        tot_rew += reward
-    return states, actions, tot_rew,controls
+    states = np.zeros([env.Nx,ns,reps])
+    actions = np.zeros([env.action_space.low.shape[0],ns,reps])
+    rewards = np.zeros([1,reps])
+    controls = np.zeros([env.action_space_unnorm.low.shape[0]+1,ns,reps])
+    for r_i in range(reps):
+        tot_reward = 0
+        s,_ = env.reset()
+        for i in range(ns):
+            a = Ks
+            s, reward, done, _,control = env.step(a)
+            states[:,i,r_i] = control['state']
+            actions[:,i,r_i] = control['PID_Action']
+            tot_reward += reward
+            controls[:,i,r_i] = control['control_in']
+        rewards[:,r_i] = tot_reward
+    if opt:
+        return -1*tot_reward
+    else:
+        return states, actions, tot_rew,controls
 
 
 def rollout_DFO(ns,policy,reps,test):   
@@ -197,7 +207,7 @@ class Net(torch.nn.Module):
     self.use_cuda = torch.cuda.is_available()
     self.device   = torch.device("cpu")
     self.deterministic = deterministic  
-    self.input_size = 10 #State size: Ca, T, Ca setpoint and T setpoint
+    self.input_size = 9 #State size: Ca, T, Ca setpoint and T setpoint
     self.output_sz  = 16 #Output size: Reactor Ks size
     self.n_layers = torch.nn.ModuleList()
     self.hs1        = n_fc1                                    # !! parameters
@@ -312,7 +322,7 @@ def criterion(policy,ns):
 # print('Finished optimisation')
 # print('Best reward:', best_reward)
 # print('Saving Best Policy...')
-# torch.save(best_policy.state_dict(), 'DFO_best_policy_wNoise_wF0_1602.pth')
+# torch.save(best_policy.state_dict(), 'DFO_SP_0703')
 # best_policy_sd = best_policy.state_dict()
 # # best_policy_sd = torch.load('DFO_best_policy_wNoise_wF0_1602.pth')
 # policy_plot = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1,deterministic = True) # Deterministic for plotting
@@ -331,43 +341,54 @@ def criterion(policy,ns):
 # plot_simulation(s,a,c,ns)
 # #
 
-checkpoint_callback = CheckpointCallback(save_freq=1200, save_path="./logs/wNoise_F0",
-                                         name_prefix="SAC_model_1602")
+# checkpoint_callback = CheckpointCallback(save_freq=1200, save_path="./logs/wNoise_F0",
+#                                          name_prefix="SAC_model_1602")
 
 
-def linear_schedule(initial_value: float) -> Callable[[float], float]:
-    """
-    Linear learning rate schedule.
+# def linear_schedule(initial_value: float) -> Callable[[float], float]:
+#     """
+#     Linear learning rate schedule.
 
-    :param initial_value: Initial learning rate.
-    :return: schedule that computes
-      current learning rate depending on remaining progress
-    """
-    def func(progress_remaining: float) -> float:
-        """
-        Progress will decrease from 1 (beginning) to 0.
+#     :param initial_value: Initial learning rate.
+#     :return: schedule that computes
+#       current learning rate depending on remaining progress
+#     """
+#     def func(progress_remaining: float) -> float:
+#         """
+#         Progress will decrease from 1 (beginning) to 0.
 
-        :param progress_remaining:
-        :return: current learning rate
-        """
-        if progress_remaining < 0.7:
-            return progress_remaining * initial_value
-        elif progress_remaining < 0.3:
-            return 0.02
-        else:
-            return initial_value
-    return func
-
-
-model = SAC('MlpPolicy', env, verbose=1, learning_rate=linear_schedule(2e-2),
-            device='cuda', seed=int(0))
-
-model.learn(total_timesteps=int(1e4), callback=checkpoint_callback)
-
-# model = SAC.load('./logs/wNoise/SAC_model_1602_13200_steps.zip')
+#         :param progress_remaining:
+#         :return: current learning rate
+#         """
+#         if progress_remaining < 0.7:
+#             return progress_remaining * initial_value
+#         elif progress_remaining < 0.3:
+#             return 0.02
+#         else:
+#             return initial_value
+#     return func
 
 
-s, a, r, c = rollout(ns, model, 3)
+# model = SAC('MlpPolicy', env, verbose=1, learning_rate=linear_schedule(2e-2),
+#             device='cuda', seed=int(0))
+
+# model.learn(total_timesteps=int(1e4), callback=checkpoint_callback)
+
+# # model = SAC.load('./logs/wNoise/SAC_model_1602_13200_steps.zip')
 
 
-plot_simulation(s, a, c, ns)
+# s, a, r, c = rollout(ns, model, 3)
+
+
+# plot_simulation(s, a, c, ns)
+
+
+# bounds = [(-1,1)]*16
+# result_vel =  differential_evolution(rollout_test,popsize=1,bounds=bounds,args= (ns, True),maxiter = 100,disp = True)
+
+# np.save('GS_cons.npy',result_vel.x)
+# Ks = result_vel.x
+Ks = np.load('GS_cons.npy')
+s,a,r,c = rollout_test(Ks,ns,False)
+
+plot_simulation(s,a,c,ns)

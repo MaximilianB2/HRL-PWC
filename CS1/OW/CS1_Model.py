@@ -169,13 +169,10 @@ class reactor_class(gym.Env):
     return self.state_norm,{}
 
   def step(self, action_policy):
-    
-    action_norm = (action_policy + 1) / 2
-
     if self.DS:
        self.u_DS = action_policy
     if self.i % 5 == 0:
-       self.action = copy.deepcopy(action_norm)
+       self.action = copy.deepcopy(action_policy)
     Ca_des = self.SP[self.SP_i,0][self.i]
     T_des = self.SP[self.SP_i,1][self.i]  
     
@@ -193,7 +190,7 @@ class reactor_class(gym.Env):
           
     
     self.state_norm = (self.state -self.observation_space.low)/(self.observation_space.high - self.observation_space.low)
-    return self.state_norm,rew,self.done,False,{}
+    return self.state_norm,rew,self.done,False,self.info
 
   def reactor(self,state,action,Ca_des,T_des):
     if not self.DR or not self.robust_test:
@@ -215,18 +212,16 @@ class reactor_class(gym.Env):
     
     #Adjust bounds from relu
     if not self.DS:
-      Ks[0] = (Ks[0])*-200
-      Ks[1] = (Ks[1])*20 + 0.01
-      Ks[2] = (Ks[2])*10
-          
-      
-      Ks[3] = (Ks[3])*13 + 290
-     
+      x_norm = np.array(([-200,0,0.01],[0,20,10]))
+      Ks_norm = ((Ks + 1) / 2) * (x_norm[1] - x_norm[0]) + x_norm[0]
+   
+      # Ks[3] = (Ks[3])*13 + 290
+      self.info = {'Ks':Ks_norm}
       if self.PID_pos:
         if self.i == 0:
-            u  = PID(Ks, state[0:2], x_sp, np.array([[0,0]]))
+            u  = PID(Ks_norm, state[0:2], x_sp, np.array([[0,0]]))
         else:
-            u  = PID(Ks,state[0:2], x_sp, np.array(self.e_history))
+            u  = PID(Ks_norm,state[0:2], x_sp, np.array(self.e_history))
 
       if self.PID_vel:
         if self.i < 2:
@@ -267,6 +262,6 @@ class reactor_class(gym.Env):
     self.s_history.append(state[0:2])
     #Compute reward (squared distance + scaled)
   
-    r_x = np.abs(e[0])/0.2 + u_mag + u_cha
-    
+    r_x = ((e[0])**2) * 1e2 + u_mag + u_cha
+
     return state_plus, -r_x

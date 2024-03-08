@@ -75,8 +75,8 @@ def criterion(policy,SP,ns,k0,UA,env):
   p_list.append(policy)
   return r_tot
 
-policy = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1 )
-env = reactor_class(test = False,ns = 120,DR=True)
+policy = Net(n_fc1 = 128,n_fc2 = 128,activation = torch.nn.ReLU,n_layers = 1 )
+env = reactor_class(test = False,ns = 120, DR=True, PID_vel= True )
 #Training Loop Parameters
 k0     = 7.2e10 # Pre-exponential factor (1/sec)
 UA     = 5e4    # U -Heat Transfer Coefficient (W/m^2-K) A -Area - (m^2)
