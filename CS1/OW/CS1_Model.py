@@ -217,17 +217,12 @@ class reactor_class(gym.Env):
    
       # Ks[3] = (Ks[3])*13 + 290
       self.info = {'Ks':Ks_norm}
-      if self.PID_pos:
-        if self.i == 0:
-            u  = PID(Ks_norm, state[0:2], x_sp, np.array([[0,0]]))
-        else:
-            u  = PID(Ks_norm,state[0:2], x_sp, np.array(self.e_history))
 
       if self.PID_vel:
         if self.i < 2:
           u = 295
         else:
-          u =  PID_velocity(Ks,state[0:2], x_sp, np.array(self.e_history),self.u_history,self.ts,np.array(self.s_history))
+          u =  PID_velocity(Ks_norm,state[0:2], x_sp, np.array(self.e_history),self.u_history,self.ts,np.array(self.s_history))
     if self.DS:
       u = self.u_DS
     # simulate system

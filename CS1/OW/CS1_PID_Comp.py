@@ -54,12 +54,13 @@ def rollout(Ks, PID_Form,opt,reps):
       Tc_eval[i,r_i] = env.u_history[-1]
     r_eval[:,r_i] = r_tot
   r = -1*np.mean(r_tot)
-  
+  ISE = np.sum((Ca_des - np.median(Ca_eval,axis=1))**2)
 
   if opt:
     return r
   else:
     print(r)
+    print(ISE,'ISE')
     return Ca_eval, T_eval, Tc_eval, ks_eval
 
 
@@ -97,24 +98,24 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,SP,ns):
   plt.show()
 
  
-  fig, axs = plt.subplots(2, 1, figsize=(10, 12))
+  fig, axs = plt.subplots(3, 1, figsize=(10, 12))
   axs[0].set_title('velocity form PID Parameters')
 
   axs[0].step(t, np.median(ks_eval_PG[0,:,:],axis=1), col[0],where = 'post', lw=1,label = labels[0])
-    # plt.gca().fill_between(t, np.min(ks_eval_PG[ks_i,:,:],axis=1), np.max(ks_eval_PG[ks_i,:,:],axis=1),color=col_fill[ks_i], alpha=0.2)
+  axs[0].fill_between(t, np.min(ks_eval_PG[0,:,:],axis=1), np.max(ks_eval_PG[0,:,:],axis=1),color=col_fill[0], alpha=0.2)
                             
   axs[0].set_ylabel('Ca PID Parameter (velocity form)')
   axs[0].set_xlabel('Time (min)')
   axs[0].legend(loc='best')
   axs[0].set_xlim(min(t), max(t))
   for ks_i in range(1,3):
-    axs[1].step(t, np.median(ks_eval_PG[ks_i,:,:],axis=1), col[ks_i],where = 'post', lw=1,label = labels[ks_i])
-    # plt.gca().fill_between(t, np.min(ks_eval_PG[ks_i,:,:],axis=1), np.max(ks_eval_PG[ks_i,:,:],axis=1),color=col_fill[ks_i], alpha=0.2)
+    axs[ks_i].step(t, np.median(ks_eval_PG[ks_i,:,:],axis=1), col[ks_i],where = 'post', lw=1,label = labels[ks_i])
+    axs[ks_i].fill_between(t, np.min(ks_eval_PG[ks_i,:,:],axis=1), np.max(ks_eval_PG[ks_i,:,:],axis=1),color=col_fill[ks_i], alpha=0.2)
                             
-  axs[1].set_ylabel('Ca PID Parameter (velocity form)')
-  axs[1].set_xlabel('Time (min)')
-  axs[1].legend(loc='best')
-  axs[1].set_xlim(min(t), max(t))
+    axs[ks_i].set_ylabel('Ca PID Parameter (velocity form)')
+    axs[ks_i].set_xlabel('Time (min)')
+    axs[ks_i].legend(loc='best')
+    axs[ks_i].set_xlim(min(t), max(t))
   plt.tight_layout()
   # plt.savefig('velocity_vs_pos_ks_vel.pdf')
   plt.show()
@@ -132,15 +133,16 @@ x0_norm = (((x0-x_norm[0]) / (x_norm[1] - x_norm[0]))*2 - 1).flatten()
 
 #x0_norm = np.tile(x0_norm, (popsize, 1))
 
-# def save_current_state(intermediate_result):
-#     np.save('current_solution.npy', intermediate_result.x)
-#     with open('current_function_value.txt', 'w') as f:
-#         f.write(str(intermediate_result.fun))
-# print('Starting Velocity Opt')
-result_vel =  differential_evolution(rollout, polish= False,popsize = 3, bounds=bounds, args= ('vel', True,3), maxiter = 5000,disp = True)
+def save_current_state(x, convergence):
+    np.save('current_solution.npy', x)
+    with open('current_function_value.txt', 'w') as f:
+        f.write(str(convergence))
+print('Starting Velocity Opt')
+result_vel =  differential_evolution(rollout, polish = False,popsize = 3, bounds=bounds, args= ('vel', True,3), maxiter = 5000,disp = True)
 np.save('GS_Global_vel.npy', result_vel.x)
 # Ks_vel = result_vel.x
-# Ks_vel = np.load('GS_Global_vel.npy')
+# Ks_vel = np.load('current_solution (7).npy')
+# Ks_vel = np.load('GS_Global_vel_const.npy')
 # np.save('GS_Global_vel_const.npy',Ks_vel)
 # Ks_vel = np.load('GS_Global_vel_reducedPop.npy')
 # Ks_pos = np.load('GS_Global_pos_const.npy')
@@ -155,4 +157,3 @@ np.save('GS_Global_vel.npy', result_vel.x)
 # Ca_dat_vel, T_dat_vel, Tc_dat_vel, ks_eval_vel = rollout(Ks_vel, 'vel', opt = False,reps = 10)
 
 # plot_simulation_comp(Ca_dat_vel, T_dat_vel, Tc_dat_vel,ks_eval_vel,SP,ns)
-

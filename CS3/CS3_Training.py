@@ -11,8 +11,8 @@ from torch_pso import ParticleSwarmOptimizer
 import copy
 from scipy.optimize import differential_evolution
 # Create Environment
-ns = 600
-env = RSR(ns, test=False, plot=False)
+ns = 300
+env = RSR(ns, test=True, plot=False)
 
 
 def sample_uniform_params(params_prev, param_max, param_min):
@@ -193,8 +193,8 @@ def rollout_DFO(ns,policy,reps,test):
             tot_reward += reward
             i += 1
         rewards[:,r_i] = tot_reward 
-        if test:
-            print(tot_reward)
+        # if test:
+        #     print(tot_reward)
     return states, actions, tot_reward,controls
 
 class Net(torch.nn.Module):
@@ -239,7 +239,7 @@ class Net(torch.nn.Module):
     return y,None
   
 def criterion(policy,ns):
-  s,a,r,c = rollout_DFO(ns,policy,1,False)
+  s,a,r,c = rollout_DFO(ns,policy,1,True)
   r = np.array(r)
   r_tot = -1*np.sum(r)
   
@@ -261,7 +261,7 @@ def criterion(policy,ns):
 # new_swarm = 0
 # tol = 0.01
 
-# env = RSR(ns,test = False,plot= False)
+# env = RSR(ns,test = True,plot= False)
 
 # max_iter = 30
 
@@ -324,16 +324,16 @@ def criterion(policy,ns):
 # print('Saving Best Policy...')
 # torch.save(best_policy.state_dict(), 'DFO_SP_0703')
 # best_policy_sd = best_policy.state_dict()
-best_policy_sd = torch.load('DFO_SP_0703.pth')
-policy_plot = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1,deterministic = True) # Deterministic for plotting
-policy_plot.load_state_dict(best_policy_sd)
-print('Plotting Best Policy...')
+# # best_policy_sd = torch.load('DFO_SP_0703.pth')
+# policy_plot = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1,deterministic = True) # Deterministic for plotting
+# policy_plot.load_state_dict(best_policy_sd)
+# print('Plotting Best Policy...')
 
-env = RSR(ns,test=True,plot=False)
-s,a,r,c = rollout_DFO(ns,policy_plot,10,True)
+# env = RSR(ns,test=True,plot=False)
+# s,a,r,c = rollout_DFO(ns,policy_plot,10,True)
 
 
-plot_simulation(s,a,c,ns)
+# plot_simulation(s,a,c,ns)
 
 # Ks = np.array([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
 # s,a,r,c = rollout_test(ns,Ks)
@@ -383,12 +383,12 @@ plot_simulation(s,a,c,ns)
 # plot_simulation(s, a, c, ns)
 
 
-# bounds = [(-1,1)]*12
-# result_vel =  differential_evolution(rollout_test,polish = False, popsize= 1,bounds=bounds,args= (ns, True),maxiter = 100,disp = True)
+bounds = [(-1,1)]*12
+result_vel =  differential_evolution(rollout_test,polish = False, popsize= 1,bounds=bounds,args= (ns, True),maxiter = 100,disp = True)
 
-# np.save('GS_cons.npy',result_vel.x)
-# Ks = result_vel.x
-# Ks = np.load('GS_cons.npy')
-# s,a,r,c = rollout_test(Ks,ns,False)
+np.save('GS_cons.npy',result_vel.x)
+Ks = result_vel.x
+Ks = np.load('GS_cons.npy')
+s,a,r,c = rollout_test(Ks,ns,False)
 
-# plot_simulation(s,a,c,ns)
+plot_simulation(s,a,c,ns)

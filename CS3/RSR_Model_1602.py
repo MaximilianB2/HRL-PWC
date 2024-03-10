@@ -31,14 +31,14 @@ class RSR(gym.Env):
     # Action Space
     self.action_space = spaces.Box(low = -1, high = 1, shape = (12,))
     self.action_space_unnorm = spaces.Box(low = np.array([8,8,0.67,8]), high = np.array([47,47,3,45]))
-    self.PID_space = spaces.Box(low = np.array([8,2,0,8,2,0.1,9,0,0.1,12,0,0]),
-                                high = np.array([14,8,0.4,14,8,0.4,10,5,0.4,18,5,0.4]))
+    self.PID_space = spaces.Box(low = np.array([0,2,0,  8,2,0.1,  9,0,0.1,  0,0,0]),
+                                high = np.array([14,8,0.4,  20,8,0.4,  10,5,0.4,  18,5,0.4]))
     
     self.SP_test = np.array([[22 for i in range(int(ns/3))] + [20.5 for i in range(int(ns/3))]+[19.5 for i in range(int(ns/3))],[22 for i in range(int(ns/3))] + [20.5 for i in range(int(ns/3))]+[19.5 for i in range(int(ns/3))],[22 for i in range(int(ns/3))] + [20.5 for i in range(int(ns/3))]+[19.5 for i in range(int(ns/3))]])
     
-    self.SP1 = np.array([[21.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))]])
-    self.SP2 = np.array([[21 for i in range(int(ns/3))] + [22 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21 for i in range(int(ns/3))] + [22 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[21 for i in range(int(ns/3))] + [22 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))]])
-    self.SP3 =  np.array([[20.5 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[20 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))],[20 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[21.5 for i in range(int(ns/3))]])
+    self.SP1 = self.SP_test#np.array([[22.1 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[19 for i in range(int(ns/3))],[22.1 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[19 for i in range(int(ns/3))],[22.1 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[19 for i in range(int(ns/3))]])
+    self.SP2 = self.SP_test#np.array([[21.9 for i in range(int(ns/3))] + [20 for i in range(int(ns/3))]+[19.5 for i in range(int(ns/3))],[21.9 for i in range(int(ns/3))] + [20 for i in range(int(ns/3))]+[19.5 for i in range(int(ns/3))],[21.9 for i in range(int(ns/3))] + [20 for i in range(int(ns/3))]+[19.5 for i in range(int(ns/3))]])
+    self.SP3 =  self.SP_test#np.array([[22 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[19.2 for i in range(int(ns/3))],[22 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[19.2 for i in range(int(ns/3))],[22 for i in range(int(ns/3))] + [21 for i in range(int(ns/3))]+[19.2 for i in range(int(ns/3))]])
     if self.test:
       self.x0 = copy.deepcopy(np.array([21.5, 0.8861, 0.1082, 0.0058, 21.5, 0.8861, 0.1082, 0.0058, 21.5, 0.1139, 0.7779, 0.1082,self.SP_test[0,0],self.SP_test[1,0],self.SP_test[2,0]]))
       self.SP  = np.array([self.SP_test])
