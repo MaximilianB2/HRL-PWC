@@ -26,7 +26,7 @@ class Net(torch.nn.Module):
     self.device   = torch.device("cpu")
 
     self.input_size = 6 #State size: Ca, T, Ca setpoint and T setpoint
-    self.output_sz  = 4 #Output size: Reactor Ks size
+    self.output_sz  = 3 #Output size: Reactor Ks size
     self.n_layers = torch.nn.ModuleList()
     self.hs1        = n_fc1                                    # !! parameters
     self.hs2        = n_fc2                                      # !! parameter

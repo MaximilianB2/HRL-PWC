@@ -27,7 +27,7 @@ def PID(Ks, x, x_setpoint, e_history):
 def PID_velocity(Ks,x,x_setpoint,e_history,u_prev,ts,s_hist):
     # K gains
     dt = ts[1] - ts[0]
-    KpCa = Ks[0]; KiCa = Ks[1]; KdCa = Ks[2]
+    KpCa = Ks[0]; KiCa = Ks[1] + 1e-6; KdCa = Ks[2]
     e = x_setpoint - x
    
     
@@ -99,7 +99,7 @@ class reactor_class(gym.Env):
       
     
     self.observation_space = spaces.Box(low = np.array([.70, 315,.70, 315,0.75, 320]),high= np.array([0.95,340,0.95,340,0.95,340]))
-    self.action_space = spaces.Box(low = np.array([-1]*4),high= np.array([1]*4))
+    self.action_space = spaces.Box(low = np.array([-1]*3),high= np.array([1]*3))
 
 
     
