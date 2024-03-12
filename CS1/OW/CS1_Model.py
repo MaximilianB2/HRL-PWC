@@ -80,17 +80,16 @@ class reactor_class(gym.Env):
     self.test = test
     self.DR = DR
     self.robust_test = robust_test
-    Ca_des1 = [0.95 for i in range(int(ns/2))] + [0.85 for i in range(int(ns/2))]
+    Ca_des1 = [0.92 for i in range(int(ns/2))] + [0.87 for i in range(int(ns/2))]
     T_des1  = [330 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
 
-    Ca_des2 = [0.9 for i in range(int(ns/2))] + [0.95 for i in range(int(ns/2))]
+    Ca_des2 = [0.9 for i in range(int(ns/2))] + [0.84 for i in range(int(ns/2))]
     T_des2  = [340 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
 
-    Ca_des3 = [0.95 for i in range(int(ns/2))] + [0.8 for i in range(int(ns/2))]
+    Ca_des3 = [0.95 for i in range(int(ns/2))] + [0.88 for i in range(int(ns/2))]
     T_des3  = [320 for i in range(int(ns/2))] + [330 for i in range(int(ns/2))]
 
-    Ca_des4 = [0.9 for i in range(int(ns/2))] + [0.85 for i in range(int(ns/2))]
-    T_des4  = [320 for i in range(int(ns/2))] + [340 for i in range(int(ns/2))]
+    
     if self.test:
       
       Ca_des1 = [0.95 for i in range(int(ns/3))] + [0.9 for i in range(int(ns/3))] + [0.85 for i in range(int(ns/3))]     
@@ -103,7 +102,7 @@ class reactor_class(gym.Env):
 
 
     
-    self.SP = np.array(([Ca_des1,T_des1],[Ca_des2,T_des2],[Ca_des3,T_des3],[Ca_des4,T_des4]),dtype = object)
+    self.SP = np.array(([Ca_des1,T_des1],[Ca_des2,T_des2],[Ca_des3,T_des3]),dtype = object)
 
     self.Ca_ss = 0.87725294608097
     self.T_ss  = 324.475443431599
@@ -179,7 +178,7 @@ class reactor_class(gym.Env):
     self.state,rew = self.reactor(self.state,self.action,Ca_des,T_des)
     self.i += 1
     if self.i == self.ns:
-        if self.SP_i < 3:
+        if self.SP_i < 2:
           self.SP_i += 1
           self.i = 0
           self.state = np.array([self.Ca_ss,self.T_ss,self.Ca_ss,self.T_ss,Ca_des,T_des])

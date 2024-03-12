@@ -137,7 +137,7 @@ def rollout(ns,policy,reps):
     return states, actions, tot_reward,controls
 
 
-def rollout_test(Ks, ns, opt):
+def rollout_test(Ks, ns, opt,PID):
     reps = 1
     env = RSR(ns,test=True,plot=False)
     s,_ = env.reset()
@@ -154,8 +154,16 @@ def rollout_test(Ks, ns, opt):
     for r_i in range(reps):
         tot_reward = 0
         s,_ = env.reset()
+        Ks_i = -1
+        i = 0
         for i in range(ns):
-            a = Ks
+            if PID == 'GS':
+                if i % 100 == 0:
+                    Ks_i += 1
+            if PID == 'const':
+                if i % 300 == 0:
+                    Ks_i += 1
+            a = Ks[Ks_i*12:(Ks_i+1)*12]
             s, reward, done, _,control = env.step(a)
             states[:,i,r_i] = control['state']
             actions[:,i,r_i] = control['PID_Action']
@@ -383,12 +391,9 @@ def criterion(policy,ns):
 # plot_simulation(s, a, c, ns)
 
 
-bounds = [(-1,1)]*12
-result_vel =  differential_evolution(rollout_test,polish = False, popsize= 1,bounds=bounds,args= (ns, True),maxiter = 100,disp = True)
-
-np.save('GS_cons.npy',result_vel.x)
-Ks = result_vel.x
-Ks = np.load('GS_cons.npy')
-s,a,r,c = rollout_test(Ks,ns,False)
-
-plot_simulation(s,a,c,ns)
+bounds_GS = [(-1,1)]*12*3
+bounds_const = [(-1,1)]*12
+result_GS =  differential_evolution(rollout_test,polish = False, popsize= 3,bounds=bounds_GS,args= (ns, True,'GS'),maxiter = 1,disp = True)
+np.save('GS.npy',result_GS.x)
+result_const =  differential_evolution(rollout_test,polish = False, popsize= 3,bounds=bounds_const,args= (ns, True, 'const'), maxiter = 1,disp = True)
+np.save('GS_const',result_const.x)

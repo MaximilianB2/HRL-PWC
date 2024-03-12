@@ -110,11 +110,17 @@ class RSR(gym.Env):
 
   
   def reward(self, state):
-    
+    if self.i == 0:
+      u_mag = 0 ; u_cha = 0
+    else:
+      u_mag = np.sum(np.abs(self.u_history[-1][:4]-self.action_space_unnorm.low))/100
+      u_cha = np.sum(np.abs(self.u_history[-1]-self.u_history[-2]))/100
     state = [state[i] for i in [0, 4, 8]]
-    error = np.sum((self.SP[self.SP_i,:,self.i] - state)**2)
+    ISE = np.sum((self.SP[self.SP_i,:,self.i] - state)**2)*10
     
-    return -error
+    r = ISE + u_mag + u_cha
+    
+    return -r
      
   def integrate(self, PID_gains):
     
