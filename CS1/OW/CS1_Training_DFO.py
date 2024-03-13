@@ -25,7 +25,7 @@ class Net(torch.nn.Module):
     self.use_cuda = torch.cuda.is_available()
     self.device   = torch.device("cpu")
 
-    self.input_size = 6 #State size: Ca, T, Ca setpoint and T setpoint
+    self.input_size = 5 #State size: Ca, T,Ca-,T- , Ca setpoint 
     self.output_sz  = 3 #Output size: Reactor Ks size
     self.n_layers = torch.nn.ModuleList()
     self.hs1        = n_fc1                                    # !! parameters

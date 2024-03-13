@@ -81,28 +81,22 @@ class reactor_class(gym.Env):
     self.DR = DR
     self.robust_test = robust_test
     Ca_des1 = [0.92 for i in range(int(ns/2))] + [0.87 for i in range(int(ns/2))]
-    T_des1  = [330 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
-
     Ca_des2 = [0.9 for i in range(int(ns/2))] + [0.84 for i in range(int(ns/2))]
-    T_des2  = [340 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
-
     Ca_des3 = [0.95 for i in range(int(ns/2))] + [0.88 for i in range(int(ns/2))]
-    T_des3  = [320 for i in range(int(ns/2))] + [330 for i in range(int(ns/2))]
+    
 
     
     if self.test:
-      
       Ca_des1 = [0.95 for i in range(int(ns/3))] + [0.9 for i in range(int(ns/3))] + [0.85 for i in range(int(ns/3))]     
-      T_des1  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
-       
+    
       
     
-    self.observation_space = spaces.Box(low = np.array([.70, 315,.70, 315,0.75, 320]),high= np.array([0.95,340,0.95,340,0.95,340]))
+    self.observation_space = spaces.Box(low = np.array([.70, 310,.70, 310,0.7]),high= np.array([1,340,1,340,1]))
     self.action_space = spaces.Box(low = np.array([-1]*3),high= np.array([1]*3))
 
 
     
-    self.SP = np.array(([Ca_des1,T_des1],[Ca_des2,T_des2],[Ca_des3,T_des3]),dtype = object)
+    self.SP = np.array(([Ca_des1],[Ca_des2],[Ca_des3]),dtype = object)
 
     self.Ca_ss = 0.87725294608097
     self.T_ss  = 324.475443431599
@@ -155,8 +149,7 @@ class reactor_class(gym.Env):
       self.UA = self.UA_dist_test()
       self.k0 = self.k0_dist_test()
     Ca_des = self.SP[self.SP_i,0][self.i]
-    T_des = self.SP[self.SP_i,1][self.i] 
-    self.state = np.array([self.Ca_ss,self.T_ss,self.Ca_ss,self.T_ss,Ca_des,T_des])
+    self.state = np.array([self.Ca_ss,self.T_ss,self.Ca_ss,self.T_ss,Ca_des])
     self.done = False
     if not self.test:
       self.disturb = False
@@ -164,7 +157,7 @@ class reactor_class(gym.Env):
     self.e_history = []
     self.s_history = []
     self.ts = [self.t[self.i],self.t[self.i+1]]
-    self.state_norm = (self.state -self.observation_space.low)/(self.observation_space.high - self.observation_space.low)
+    self.state_norm = (self.state - self.observation_space.low)/(self.observation_space.high - self.observation_space.low)
     return self.state_norm,{}
 
   def step(self, action_policy):
@@ -173,15 +166,15 @@ class reactor_class(gym.Env):
     if self.i % 5 == 0:
        self.action = copy.deepcopy(action_policy)
     Ca_des = self.SP[self.SP_i,0][self.i]
-    T_des = self.SP[self.SP_i,1][self.i]  
+   
     
-    self.state,rew = self.reactor(self.state,self.action,Ca_des,T_des)
+    self.state,rew = self.reactor(self.state,self.action,Ca_des)
     self.i += 1
     if self.i == self.ns:
         if self.SP_i < 2:
           self.SP_i += 1
           self.i = 0
-          self.state = np.array([self.Ca_ss,self.T_ss,self.Ca_ss,self.T_ss,Ca_des,T_des])
+          self.state = np.array([self.Ca_ss,self.T_ss,self.Ca_ss,self.T_ss,Ca_des])
           self.u_history = []
           self.e_history = []
         else:
@@ -191,7 +184,7 @@ class reactor_class(gym.Env):
     self.state_norm = (self.state -self.observation_space.low)/(self.observation_space.high - self.observation_space.low)
     return self.state_norm,rew,self.done,False,self.info
 
-  def reactor(self,state,action,Ca_des,T_des):
+  def reactor(self,state,action,Ca_des):
     if not self.DR or not self.robust_test:
       k0 = 7.2e10 #1/sec
       UA = 5e4 # W/K
@@ -204,7 +197,7 @@ class reactor_class(gym.Env):
     Ca = state[0]
     T  = state[1]
   
-    x_sp    = np.array([Ca_des,T_des])
+    x_sp    = np.array([Ca_des])
     
     
     Ks = copy.deepcopy(action) #Ca, T, u, Ca setpoint and T setpoint
@@ -232,13 +225,12 @@ class reactor_class(gym.Env):
     Ca_plus = y[-1][0] + np.random.uniform(low=-0.001,high=0.001)
     T_plus  = y[-1][1] + np.random.uniform(low=-.5,high=0.5)
     # collect data
-    state_plus = np.zeros(6)
+    state_plus = np.zeros(5)
     state_plus[0]   = Ca_plus
     state_plus[1]   = T_plus
     state_plus[2]   = Ca
     state_plus[3]   = T
     state_plus[4]   = Ca_des
-    state_plus[5]   = T_des
     # compute tracking error
     e  = x_sp-state[0:2]
     self.e_history.append((x_sp-state[0:2]))

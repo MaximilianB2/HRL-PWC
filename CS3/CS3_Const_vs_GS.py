@@ -187,7 +187,7 @@ def rollout_test(Ks, ns, PID):
     return states, actions, tot_rew,controls
 
 # Rollout const
-Ks_const = np.load('GS_cons.npy')
+Ks_const = np.load('GS_const.npy')
 s_const,a_const,r_const,c_const = rollout_test(Ks_const, ns, PID = 'const')
 
 # Rollout GS

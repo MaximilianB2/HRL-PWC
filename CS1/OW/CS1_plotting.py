@@ -17,7 +17,7 @@ class Net(torch.nn.Module):
     self.use_cuda = torch.cuda.is_available()
     self.device   = torch.device("cpu")
 
-    self.input_size = 6 #State size: Ca, T, Ca setpoint and T setpoint
+    self.input_size = 5 #State size: Ca, T, Ca setpoint and T setpoint
     self.output_sz  = 3 #Output size: Reactor Ks size
     self.n_layers = torch.nn.ModuleList()
     self.hs1        = n_fc1                                    # !! parameters
@@ -57,7 +57,7 @@ env = reactor_class(test = True,ns = 240,PID_vel=True)
 Ca_des = [0.95 for i in range(int(ns/3))] + [0.9 for i in range(int(ns/3))] + [0.85 for i in range(int(ns/3))]  
 T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
 
-model = SAC.load('SAC_5E5')
+model = SAC.load('SAC_Vel_0403')
 reps = 10
 Ca_eval_PG = np.zeros((ns,reps))
 T_eval_PG = np.zeros((ns,reps))
@@ -74,27 +74,23 @@ for r_i in range(reps):
   a_policy = model.predict(s_norm,deterministic=True)[0]
  
   a_sim = a_policy
-  a_norm = (a_policy+1)/2 # [-1,1] -> [0,1]
-  a_sim = copy.deepcopy(a_norm)
-  a_sim[0] = (a_sim[0])*-200
-  a_sim[1] = (a_sim[1])*20 + 0.01
-  a_sim[2] = (a_sim[2])*10
+  x_norm = np.array(([-200,0,0.01],[0,20,10]))
+  Ks_norm = ((a_policy + 1) / 2) * (x_norm[1] - x_norm[0]) + x_norm[0]
+      
+  
+  ks_eval_PG[:,0,r_i] = Ks_norm
       
   
   r_tot = 0
   for i in range(1,ns):
-    
     if i % 5 == 0:
       a_policy = model.predict(s_norm,deterministic=True)[0]
           
-   
- 
-    
-    
+      
     a_copy = copy.deepcopy(a_sim)
     s_norm, r, done, _,info = env.step(a_policy)
-    ks_eval_PG[:,i,r_i] = info['Ks'] 
-    a_sim = a_copy
+    Ks_norm = ((a_policy + 1) / 2) * (x_norm[1] - x_norm[0]) + x_norm[0]
+    ks_eval_PG[:,i,r_i] = Ks_norm
     r_tot += r
     s = s_norm*(env.observation_space.high - env.observation_space.low) + env.observation_space.low
     Ca_eval_PG[i,r_i] = s[0]
@@ -126,7 +122,6 @@ for r_i in range(reps):
   ks_eval_EA[:,0,r_i] = Ks_norm
   r_tot = 0
   for i in range(1,ns):
-    
     if i % 5 == 0:
       a_policy = best_policy(torch.tensor(s_norm))
       

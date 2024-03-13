@@ -27,7 +27,8 @@ checkpoint_callback = CheckpointCallback(save_freq=100, save_path="./logs/SAC_ve
                                          name_prefix="SAC_model_vel_1602")
 env = reactor_class(test=False,ns = 240,PID_vel=True)
 reward_callback = RewardCallback(check_freq=500)
-model = SAC("MlpPolicy", env, verbose=1,learning_rate=0.01,device = 'cuda')
+model = SAC("MlpPolicy", env, verbose=1,learning_rate=1e-3,device = 'cuda')
+# print(model.policy)
 model.learn(int(3e4))
 model.save('SAC_Vel_0403')
 SAC_Training_Rewards = reward_callback.rewards

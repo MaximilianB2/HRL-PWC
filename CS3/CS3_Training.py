@@ -1,140 +1,140 @@
 # Import Libraries
-from stable_baselines3 import SAC
+# from stable_baselines3 import SAC
 import numpy as np
-import torch
-import matplotlib.pyplot as plt
-import torch.nn.functional as F
-from stable_baselines3.common.callbacks import CheckpointCallback
-from typing import Callable
+# import torch
+# import matplotlib.pyplot as plt
+# import torch.nn.functional as F
+# from stable_baselines3.common.callbacks import CheckpointCallback
+# from typing import Callable
 from RSR_Model_1602 import RSR
-from torch_pso import ParticleSwarmOptimizer
-import copy
+# from torch_pso import ParticleSwarmOptimizer
+# import copy
 from scipy.optimize import differential_evolution
 # Create Environment
 ns = 300
 env = RSR(ns, test=True, plot=False)
 
 
-def sample_uniform_params(params_prev, param_max, param_min):
-    params = {k: torch.rand(v.shape) * (param_max - param_min) + param_min
-              for k, v in params_prev.items()}
-    return params
+# def sample_uniform_params(params_prev, param_max, param_min):
+#     params = {k: torch.rand(v.shape) * (param_max - param_min) + param_min
+#               for k, v in params_prev.items()}
+#     return params
 
 
-def sample_local_params(params_prev, param_max, param_min):
-    params = {k: torch.rand(v.shape) * (param_max - param_min) + param_min + v
-              for k, v in params_prev.items()}
-    return params
+# def sample_local_params(params_prev, param_max, param_min):
+#     params = {k: torch.rand(v.shape) * (param_max - param_min) + param_min + v
+#               for k, v in params_prev.items()}
+#     return params
 
 
-def plot_simulation(states, actions, control_inputs, ns):
+# def plot_simulation(states, actions, control_inputs, ns):
    
     
-    actions = np.array(actions)
-    control_inputs = np.array(control_inputs)
-    SP = SP_M = env.SP_test[0,:]
-    data = [np.array(states)[i,:,:] for i in [0,4,8,1,2,3,5,6,7,9,10,11]]
+#     actions = np.array(actions)
+#     control_inputs = np.array(control_inputs)
+#     SP = SP_M = env.SP_test[0,:]
+#     data = [np.array(states)[i,:,:] for i in [0,4,8,1,2,3,5,6,7,9,10,11]]
    
-    titles = ['Level', 'Component Fractions', 'Actions', 'Control Inputs']
-    control_labels = ['$F_R$', '$F_M$', '$B$', '$D$']
-    labels = ['Reactor', 'Storage', 'Flash', '$x_{1,R}$', '$x_{2,R}$', '$x_{3,R}$', '$x_{1,M}$', '$x_{2,M}$', '$x_{3,M}$', '$x_{1,B}$', '$x_{2,B}$', '$x_{3,B}$']
-    PID_labels = ['$k_p$', '$k_i$', '$k_d$', '$k_b$']
-    colors_PID = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red']
-    colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan', 'tab:blue', 'tab:orange']
+#     titles = ['Level', 'Component Fractions', 'Actions', 'Control Inputs']
+#     control_labels = ['$F_R$', '$F_M$', '$B$', '$D$']
+#     labels = ['Reactor', 'Storage', 'Flash', '$x_{1,R}$', '$x_{2,R}$', '$x_{3,R}$', '$x_{1,M}$', '$x_{2,M}$', '$x_{3,M}$', '$x_{1,B}$', '$x_{2,B}$', '$x_{3,B}$']
+#     PID_labels = ['$k_p$', '$k_i$', '$k_d$', '$k_b$']
+#     colors_PID = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red']
+#     colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan', 'tab:blue', 'tab:orange']
 
-    t = np.linspace(0, 20, ns)    
-    fig, axs = plt.subplots(4, 2, figsize=(10, 12))
-    for i in range(8):  # Loop over all 7 axes
-        ax = axs[i//2, i%2]  # Get current axes
-        ax.grid(True)  # Add grid
-        ax.set_xlim(left=0, right=20)  # Set x-axis limits
-        ax.set_xlabel('Time (h)')
-    #Level Plots
-    for i in range(3):
-        axs[0,0].plot(t,np.median(data[i],axis= 1), color=colors[i], label=labels[i])
-        axs[0,0].fill_between(t,np.min(data[i],axis = 1),np.max(data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
-        axs[0,0].set_ylabel('Vessel Holdup')
-    #axs[0,0].step(t, SP, 'k--', where  = 'post',label='SP$_R$ \& SP$_B$')
-    axs[0,0].step(t, SP_M, 'k-.', where  = 'post',label='SP$_M$')
+#     t = np.linspace(0, 20, ns)    
+#     fig, axs = plt.subplots(4, 2, figsize=(10, 12))
+#     for i in range(8):  # Loop over all 7 axes
+#         ax = axs[i//2, i%2]  # Get current axes
+#         ax.grid(True)  # Add grid
+#         ax.set_xlim(left=0, right=20)  # Set x-axis limits
+#         ax.set_xlabel('Time (h)')
+#     #Level Plots
+#     for i in range(3):
+#         axs[0,0].plot(t,np.median(data[i],axis= 1), color=colors[i], label=labels[i])
+#         axs[0,0].fill_between(t,np.min(data[i],axis = 1),np.max(data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
+#         axs[0,0].set_ylabel('Vessel Holdup')
+#     #axs[0,0].step(t, SP, 'k--', where  = 'post',label='SP$_R$ \& SP$_B$')
+#     axs[0,0].step(t, SP_M, 'k-.', where  = 'post',label='SP$_M$')
    
-    axs[0,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.3),
-          ncol=3,frameon=False)
-    #axs[0,0].set_ylim(20.5, 21.5)
+#     axs[0,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.3),
+#           ncol=3,frameon=False)
+#     #axs[0,0].set_ylim(20.5, 21.5)
     
-    #Component Fraction Plots
-    for i in range(3, len(data)):
-        axs[0,1].plot(t,np.median(data[i],axis= 1), color=colors[i], label=labels[i])
-        axs[0,1].fill_between(t,np.min(data[i],axis = 1),np.max(data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
-    axs[0,1].set_ylabel('Liquid Component Fraction')
-    axs[0,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.5),
-          ncol=3,frameon=False)
-    #PID Action Plots
-    for i in range(0,3):
-        axs[1,0].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
-        axs[1,0].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
-    axs[1,0].set_ylabel('$F_R$ PID Action')
-    axs[1,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
-          ncol=4,frameon=False)
-    for i in range(3,6):
-        axs[1,1].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
-        axs[1,1].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
-    axs[1,1].set_ylabel('$F_M$ PID Action')
-    axs[1,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
-          ncol=4,frameon=False)
-    for i in range(6,9):
-        axs[2,0].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
-        axs[2,0].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
-    axs[2,0].set_ylabel('$B$ PID Action')
-    axs[2,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
-          ncol=4,frameon=False)
+#     #Component Fraction Plots
+#     for i in range(3, len(data)):
+#         axs[0,1].plot(t,np.median(data[i],axis= 1), color=colors[i], label=labels[i])
+#         axs[0,1].fill_between(t,np.min(data[i],axis = 1),np.max(data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
+#     axs[0,1].set_ylabel('Liquid Component Fraction')
+#     axs[0,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.5),
+#           ncol=3,frameon=False)
+#     #PID Action Plots
+#     for i in range(0,3):
+#         axs[1,0].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
+#         axs[1,0].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
+#     axs[1,0].set_ylabel('$F_R$ PID Action')
+#     axs[1,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
+#           ncol=4,frameon=False)
+#     for i in range(3,6):
+#         axs[1,1].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
+#         axs[1,1].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
+#     axs[1,1].set_ylabel('$F_M$ PID Action')
+#     axs[1,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
+#           ncol=4,frameon=False)
+#     for i in range(6,9):
+#         axs[2,0].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
+#         axs[2,0].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
+#     axs[2,0].set_ylabel('$B$ PID Action')
+#     axs[2,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
+#           ncol=4,frameon=False)
     
-    for i in range(9,12):
-        axs[2,1].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
-        axs[2,1].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
-    axs[2,1].set_ylabel('$D$ PID Action')
-    axs[2,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
-          ncol=4,frameon=False)
+#     for i in range(9,12):
+#         axs[2,1].step(t, np.median(actions[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label=PID_labels[i % len(PID_labels)])
+#         axs[2,1].fill_between(t,np.min(actions[i,:,:],axis = 1),np.max(actions[i,:,:],axis = 1),color = colors_PID[i % len(colors_PID)],alpha = 0.2,edgecolor = 'none')
+#     axs[2,1].set_ylabel('$D$ PID Action')
+#     axs[2,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
+#           ncol=4,frameon=False)
 
-    for i in range(2):
-        axs[3,0].step(t, np.median(control_inputs[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors[i % len(colors)], label=control_labels[i])
-        axs[3,0].fill_between(t,np.min(control_inputs[i,:,:],axis = 1),np.max(control_inputs[i,:,:],axis = 1),color = colors[i % len(colors)],alpha = 0.2,edgecolor = 'none')
-    axs[3,0].set_ylabel('Flowrate (h$^{-1}$)')
-    axs[3,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
-          ncol=10,frameon=False)
+#     for i in range(2):
+#         axs[3,0].step(t, np.median(control_inputs[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors[i % len(colors)], label=control_labels[i])
+#         axs[3,0].fill_between(t,np.min(control_inputs[i,:,:],axis = 1),np.max(control_inputs[i,:,:],axis = 1),color = colors[i % len(colors)],alpha = 0.2,edgecolor = 'none')
+#     axs[3,0].set_ylabel('Flowrate (h$^{-1}$)')
+#     axs[3,0].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
+#           ncol=10,frameon=False)
    
  
-    for i in range(2,4):
-        axs[3,1].step(t, np.median(control_inputs[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors[i % len(colors)], label=control_labels[i])
-        axs[3,1].fill_between(t,np.min(control_inputs[i,:,:],axis = 1),np.max(control_inputs[i,:,:],axis = 1),color = colors[i % len(colors)],alpha = 0.2,edgecolor = 'none')
-    axs[3,1].set_ylabel('Flowrate (h$^{-1}$)')
-    axs[3,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
-          ncol=10,frameon=False)
+#     for i in range(2,4):
+#         axs[3,1].step(t, np.median(control_inputs[i,:,:],axis = 1), where='post', linestyle='dashed', color=colors[i % len(colors)], label=control_labels[i])
+#         axs[3,1].fill_between(t,np.min(control_inputs[i,:,:],axis = 1),np.max(control_inputs[i,:,:],axis = 1),color = colors[i % len(colors)],alpha = 0.2,edgecolor = 'none')
+#     axs[3,1].set_ylabel('Flowrate (h$^{-1}$)')
+#     axs[3,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.2),
+#           ncol=10,frameon=False)
     
-    plt.subplots_adjust(hspace=0.5)
+#     plt.subplots_adjust(hspace=0.5)
    
-    plt.show()
+#     plt.show()
 
-def rollout(ns,policy,reps):    
+# def rollout(ns,policy,reps):    
 
-    states = np.zeros([env.Nx,ns,reps])
-    actions = np.zeros([env.action_space.low.shape[0],ns,reps])
-    rewards = np.zeros([1,reps])
-    controls = np.zeros([env.action_space_unnorm.low.shape[0]+1,ns,reps])
-    for r_i in range(reps):
-        tot_reward = 0
-        s,_ = env.reset()
+#     states = np.zeros([env.Nx,ns,reps])
+#     actions = np.zeros([env.action_space.low.shape[0],ns,reps])
+#     rewards = np.zeros([1,reps])
+#     controls = np.zeros([env.action_space_unnorm.low.shape[0]+1,ns,reps])
+#     for r_i in range(reps):
+#         tot_reward = 0
+#         s,_ = env.reset()
         
-        for i in range(ns):
-            a = policy.predict(torch.tensor(s),deterministic = True)[0]
-            s, reward, done, _,control = env.step(a)
-            states[:,i,r_i] = control['state']
-            actions[:,i,r_i] = control['PID_Action']
-            tot_reward += reward
-            controls[:,i,r_i] = control['control_in']
-        print(tot_reward)
-        rewards[:,r_i] = tot_reward
+#         for i in range(ns):
+#             a = policy.predict(torch.tensor(s),deterministic = True)[0]
+#             s, reward, done, _,control = env.step(a)
+#             states[:,i,r_i] = control['state']
+#             actions[:,i,r_i] = control['PID_Action']
+#             tot_reward += reward
+#             controls[:,i,r_i] = control['control_in']
+#         print(tot_reward)
+#         rewards[:,r_i] = tot_reward
         
-    return states, actions, tot_reward,controls
+#     return states, actions, tot_reward,controls
 
 
 def rollout_test(Ks, ns, opt,PID):
@@ -176,88 +176,88 @@ def rollout_test(Ks, ns, opt,PID):
         return states, actions, tot_rew,controls
 
 
-def rollout_DFO(ns,policy,reps,test):   
-    done = False
-    states = np.zeros([env.Nx,ns,reps])
-    actions = np.zeros([env.action_space.low.shape[0],ns,reps])
-    rewards = np.zeros([1,reps])
-    controls = np.zeros([env.action_space_unnorm.low.shape[0]+1,ns,reps])
-    tot_reward = 0
-    for r_i in range(reps):
-        tot_reward = 0
-        s,_ = env.reset()
-        i = 0
-        if test:
-            n_s = 300
-        else:
-            n_s= 900
-        for i in range(n_s):
-            a = policy.predict(torch.tensor(s))[0].detach().numpy()
-            s, reward, done, _,control = env.step(a)
-            if test:
-                states[:,i,r_i] = control['state']
-                actions[:,i,r_i] = control['PID_Action']
-                controls[:,i,r_i] = control['control_in']
-            tot_reward += reward
-            i += 1
-        rewards[:,r_i] = tot_reward 
-        # if test:
-        #     print(tot_reward)
-    return states, actions, tot_reward,controls
+# def rollout_DFO(ns,policy,reps,test):   
+#     done = False
+#     states = np.zeros([env.Nx,ns,reps])
+#     actions = np.zeros([env.action_space.low.shape[0],ns,reps])
+#     rewards = np.zeros([1,reps])
+#     controls = np.zeros([env.action_space_unnorm.low.shape[0]+1,ns,reps])
+#     tot_reward = 0
+#     for r_i in range(reps):
+#         tot_reward = 0
+#         s,_ = env.reset()
+#         i = 0
+#         if test:
+#             n_s = 300
+#         else:
+#             n_s= 900
+#         for i in range(n_s):
+#             a = policy.predict(torch.tensor(s))[0].detach().numpy()
+#             s, reward, done, _,control = env.step(a)
+#             if test:
+#                 states[:,i,r_i] = control['state']
+#                 actions[:,i,r_i] = control['PID_Action']
+#                 controls[:,i,r_i] = control['control_in']
+#             tot_reward += reward
+#             i += 1
+#         rewards[:,r_i] = tot_reward 
+#         # if test:
+#         #     print(tot_reward)
+#     return states, actions, tot_reward,controls
 
-class Net(torch.nn.Module):
-  def __init__(self, n_fc1, n_fc2, activation,n_layers,deterministic, **kwargs):
-    super(Net, self).__init__()
+# class Net(torch.nn.Module):
+#   def __init__(self, n_fc1, n_fc2, activation,n_layers,deterministic, **kwargs):
+#     super(Net, self).__init__()
 
-    # Unpack the dictionary
-    self.args     = kwargs
-    self.dtype    = torch.float
-    self.use_cuda = torch.cuda.is_available()
-    self.device   = torch.device("cpu")
-    self.deterministic = deterministic  
-    self.input_size = 9 #State size: Ca, T, Ca setpoint and T setpoint
-    self.output_sz  = 12 #Output size: Reactor Ks size
-    self.n_layers = torch.nn.ModuleList()
-    self.hs1        = n_fc1                                    # !! parameters
-    self.hs2        = n_fc2                                      # !! parameter
+#     # Unpack the dictionary
+#     self.args     = kwargs
+#     self.dtype    = torch.float
+#     self.use_cuda = torch.cuda.is_available()
+#     self.device   = torch.device("cpu")
+#     self.deterministic = deterministic  
+#     self.input_size = 9 #State size: Ca, T, Ca setpoint and T setpoint
+#     self.output_sz  = 12 #Output size: Reactor Ks size
+#     self.n_layers = torch.nn.ModuleList()
+#     self.hs1        = n_fc1                                    # !! parameters
+#     self.hs2        = n_fc2                                      # !! parameter
 
-    # defining layer
-    self.hidden1 = torch.nn.Linear(self.input_size, self.hs1,bias=True)
-    self.act = activation()
-    self.hidden2 = torch.nn.Linear(self.hs1, self.hs2,bias=True)
-    for i in range(0,n_layers):
-      linear_layer = torch.nn.Linear(self.hs2,self.hs2)
-      self.n_layers.append(linear_layer)
-    self.output_mu = torch.nn.Linear(self.hs2, self.output_sz, bias=True)
-    self.output_std = torch.nn.Linear(self.hs2, self.output_sz, bias=True)
+#     # defining layer
+#     self.hidden1 = torch.nn.Linear(self.input_size, self.hs1,bias=True)
+#     self.act = activation()
+#     self.hidden2 = torch.nn.Linear(self.hs1, self.hs2,bias=True)
+#     for i in range(0,n_layers):
+#       linear_layer = torch.nn.Linear(self.hs2,self.hs2)
+#       self.n_layers.append(linear_layer)
+#     self.output_mu = torch.nn.Linear(self.hs2, self.output_sz, bias=True)
+#     self.output_std = torch.nn.Linear(self.hs2, self.output_sz, bias=True)
 
-  def predict(self, x):
+#   def predict(self, x):
 
-    x = x.float()
-    y           = self.act(self.hidden1(x))
-    y           = self.act(self.hidden2(y))        
-    mu = self.output_mu(y)
-    log_std = self.output_std(y) 
-    dist = torch.distributions.Normal(mu, log_std.exp()+ 1e-6)
-    out = dist.sample()                                         
-    y = F.tanh(out) #[-1,1]
-    if self.deterministic:
-      y = torch.tanh(mu)
+#     x = x.float()
+#     y           = self.act(self.hidden1(x))
+#     y           = self.act(self.hidden2(y))        
+#     mu = self.output_mu(y)
+#     log_std = self.output_std(y) 
+#     dist = torch.distributions.Normal(mu, log_std.exp()+ 1e-6)
+#     out = dist.sample()                                         
+#     y = F.tanh(out) #[-1,1]
+#     if self.deterministic:
+#       y = torch.tanh(mu)
 
-    return y,None
+#     return y,None
   
-def criterion(policy,ns):
-  s,a,r,c = rollout_DFO(ns,policy,1,True)
-  r = np.array(r)
-  r_tot = -1*np.sum(r)
+# def criterion(policy,ns):
+#   s,a,r,c = rollout_DFO(ns,policy,1,True)
+#   r = np.array(r)
+#   r_tot = -1*np.sum(r)
   
-  global r_list
-  global p_list
-  global r_list_i
-  r_list.append(r_tot)
-  r_list_i.append(r_tot)
-  p_list.append(policy)
-  return r_tot
+#   global r_list
+#   global p_list
+#   global r_list_i
+#   r_list.append(r_tot)
+#   r_list_i.append(r_tot)
+#   p_list.append(policy)
+#   return r_tot
 
 # policy = Net(n_fc1 = 256,n_fc2 = 256,activation = torch.nn.ReLU,n_layers = 1,deterministic = False)
 
@@ -395,5 +395,6 @@ bounds_GS = [(-1,1)]*12*3
 bounds_const = [(-1,1)]*12
 result_GS =  differential_evolution(rollout_test,polish = False, popsize= 3,bounds=bounds_GS,args= (ns, True,'GS'),maxiter = 1,disp = True)
 np.save('GS.npy',result_GS.x)
-result_const =  differential_evolution(rollout_test,polish = False, popsize= 3,bounds=bounds_const,args= (ns, True, 'const'), maxiter = 1,disp = True)
+result_const =  differential_evolution(rollout_test,polish = False, popsize= 1,bounds=bounds_const,args= (ns, True, 'const'), maxiter = 10,disp = True)
 np.save('GS_const',result_const.x)
+
