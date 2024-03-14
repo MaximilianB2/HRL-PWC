@@ -7,7 +7,7 @@ class RSR(gym.Env):
   def __init__(self,ns,test, plot = False):
     self.i = 0
     self.ns = ns 
-    self.T  = 75
+    self.T  = 130
     self.dt = self.T/self.ns
     self.Nx = 12
     self.plot = plot  
@@ -113,11 +113,12 @@ class RSR(gym.Env):
     if self.i == 0:
       u_mag = 0 ; u_cha = 0
     else:
-      u_mag = np.sum(np.abs(self.u_history[-1][:4]-self.action_space_unnorm.low))/100
+      u_mag = np.sum(np.abs(self.u_history[-1][:4]-self.action_space_unnorm.low))/1000
       u_cha = np.sum(np.abs(self.u_history[-1]-self.u_history[-2]))/10
     state = [state[i] for i in [0, 4, 8]]
     ISE = np.sum((self.SP[self.SP_i,:,self.i] - state)**2)*10
     
+    print('ISE', ISE,'u_mag',u_mag,'u_cha',u_cha)
     r = ISE + u_mag + u_cha
     
     return -r
@@ -221,6 +222,7 @@ class RSR(gym.Env):
     
     u = np.clip(u, self.action_space_unnorm.low[3], self.action_space_unnorm.high[3])
     return u
+  
   def casadify(self, model, sym_x, sym_u):
     """
     Given a model with Nx states and Nu inputs and returns rhs of ode,

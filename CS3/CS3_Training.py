@@ -391,10 +391,10 @@ def rollout_test(Ks, ns, opt,PID):
 # plot_simulation(s, a, c, ns)
 
 
-bounds_GS = [(-1,1)]*12*3
-bounds_const = [(-1,1)]*12
-result_GS =  differential_evolution(rollout_test,polish = False, popsize= 3,bounds=bounds_GS,args= (ns, True,'GS'),maxiter = 1,disp = True)
-np.save('GS.npy',result_GS.x)
-result_const =  differential_evolution(rollout_test,polish = False, popsize= 1,bounds=bounds_const,args= (ns, True, 'const'), maxiter = 10,disp = True)
-np.save('GS_const',result_const.x)
+# bounds_GS = [(-1,1)]*12*3
+# bounds_const = [(-1,1)]*12
+# result_GS =  differential_evolution(rollout_test,polish = False, popsize= 3,bounds=bounds_GS,args= (ns, True,'GS'),maxiter = 1,disp = True)
+# np.save('GS.npy',result_GS.x)
+# result_const =  differential_evolution(rollout_test,polish = False, popsize= 1,bounds=bounds_const,args= (ns, True, 'const'), maxiter = 10,disp = True)
+# np.save('GS_const',result_const.x)
 

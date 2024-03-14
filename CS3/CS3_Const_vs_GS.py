@@ -14,18 +14,18 @@ from RSR_Model_1602 import RSR
 ns = 300
 env = RSR(ns,test=True,plot=False)
 
-def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
+def plot_simulation(s_GS,s_const,a_GS,a_const,c_GS,c_const,ns,ISE_GS,ISE_const):
     #Enable LaTeX for the plots
    
 
     #Load Data
-    DFO_a_data = np.array(a_DFO)
-    DFO_c_data = np.array(c_DFO)
-    SAC_a_data = np.array(a_SAC)
-    SAC_c_data = np.array(c_SAC)
+    GS_a_data = np.array(a_GS)
+    GS_c_data = np.array(c_GS)
+    const_a_data = np.array(a_const)
+    const_c_data = np.array(c_const)
     SP = SP_M = env.SP_test[0,:]
-    DFO_s_data = [np.array(s_DFO)[i,:,:]  for i in [0,4,8,1,2,3,5,6,7,9,10,11]]
-    SAC_s_data = [np.array(s_SAC)[i,:,:]  for i in [0,4,8,1,2,3,5,6,7,9,10,11]]
+    GS_s_data = [np.array(s_GS)[i,:,:]  for i in [0,4,8,1,2,3,5,6,7,9,10,11]]
+    const_s_data = [np.array(s_const)[i,:,:]  for i in [0,4,8,1,2,3,5,6,7,9,10,11]]
 
     #Colours, Titles and Labels
     titles = ['Level', 'Component Fractions', 'Actions', 'Control Inputs']
@@ -46,22 +46,22 @@ def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
 
     # DFO Holdup Plots
     for i in range(3):
-        axs[0,0].plot(t,np.median(DFO_s_data[i],axis = 1), color=colors[i], label= labels[i])
-        axs[0,0].fill_between(t,np.min(DFO_s_data[i],axis = 1),np.max(DFO_s_data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
+        axs[0,0].plot(t,np.median(GS_s_data[i],axis = 1), color=colors[i], label= labels[i])
+        axs[0,0].fill_between(t,np.min(GS_s_data[i],axis = 1),np.max(GS_s_data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
         axs[0,0].set_ylabel('Vessel Holdup')
     #axs[0,0].step(t, SP, 'k--', where  = 'post',label='SP$_R$ \& SP$_B$')
     axs[0,0].set_title('GS Holdups', y=1.1)
     axs[0,0].step(t, SP_M, 'k-.', where  = 'post',label='SP')
     # axs[0,0].axvline(x=t[int((ns-1)/3)], alpha=0.7, linestyle = 'dashed',label = '$F_0$ Disturbance') 
-    axs[0, 0].text(0.75, 0.95, 'GS ISE: {:.2f}'.format(ISE_DFO), transform=axs[0,0].transAxes, ha='center', va='top', bbox=dict(facecolor='white', edgecolor='white'))
-    axs[0,1].text(0.75, 0.95, 'Const ISE: {:.2f}'.format(ISE_SAC), transform=axs[0,1].transAxes, ha='center', va='top', bbox=dict(facecolor='white', edgecolor='white'))
+    axs[0, 0].text(0.75, 0.95, 'GS ISE: {:.2f}'.format(ISE_GS), transform=axs[0,0].transAxes, ha='center', va='top', bbox=dict(facecolor='white', edgecolor='white'))
+    axs[0,1].text(0.75, 0.95, 'Const ISE: {:.2f}'.format(ISE_const), transform=axs[0,1].transAxes, ha='center', va='top', bbox=dict(facecolor='white', edgecolor='white'))
 
 
 
     # axins = zoomed_inset_axes(axs[0,0], zoom=3, loc='upper right')  
     # for i in range(3):
-    #     axins.plot(t,np.median(DFO_s_data[i],axis = 1), color=colors[i], label= labels[i])
-    #     axins.fill_between(t,np.min(DFO_s_data[i],axis = 1),np.max(DFO_s_data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
+    #     axins.plot(t,np.median(GS_s_data[i],axis = 1), color=colors[i], label= labels[i])
+    #     axins.fill_between(t,np.min(GS_s_data[i],axis = 1),np.max(GS_s_data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
     # axins.grid(True)
     # axins.axvline(x = t[int((ns-1)/3)], alpha = 0.7, linestyle = 'dashed') 
     # axins.step(t, SP_M, 'k-.', where  = 'post')
@@ -77,8 +77,8 @@ def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
     
     #SAC Holdup Plots
     for i in range(3):
-        axs[0,1].plot(t,np.median(SAC_s_data[i],axis = 1), color=colors[i], label='Const ' + labels[i])
-        axs[0,1].fill_between(t,np.min(SAC_s_data[i],axis = 1),np.max(SAC_s_data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
+        axs[0,1].plot(t,np.median(const_s_data[i],axis = 1), color=colors[i], label='Const ' + labels[i])
+        axs[0,1].fill_between(t,np.min (const_s_data[i],axis = 1),np.max (const_s_data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
         axs[0,1].set_ylabel('Vessel Holdup')
     axs[0,1].set_title('Const Holdups',y = 1.1)
     # axs[0,0].step(t, SP, 'k--', where  = 'post',label='SP$_R$ \& SP$_B$')
@@ -86,8 +86,8 @@ def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
     # axs[0,1].axvline(x = t[int((ns-1)/3)], alpha = 0.7, linestyle = 'dashed',label = '$F_0$ Disturbance') 
     # axins = zoomed_inset_axes(axs[0,1], zoom=3, loc='upper right')  
     # for i in range(3):
-    #     axins.plot(t,np.median(SAC_s_data[i],axis = 1), color=colors[i], label='SAC ' + labels[i])
-    #     axins.fill_between(t,np.min(SAC_s_data[i],axis = 1),np.max(SAC_s_data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
+    #     axins.plot(t,np.median    GS_s_data[i],axis = 1), color=colors[i], label='SAC ' + labels[i])
+    #     axins.fill_between(t,np.min   GS_s_data[i],axis = 1),np.max GS_s_data[i],axis = 1),color = colors[i],alpha = 0.2,edgecolor = 'none')
     # axins.grid(True)
     # axins.axvline(x = t[int((ns-1)/3)], alpha = 0.7, linestyle = 'dashed',label = '$F_0$ Disturbance') 
     # axins.step(t, SP_M, 'k-.', where  = 'post')
@@ -102,52 +102,52 @@ def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
     
     # PID Action Plots
     for i in range(0,3):
-        axs[1,0].step(t, np.median(DFO_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='DFO ' + PID_labels[i % len(PID_labels)])
-        axs[1,0].step(t, np.median(SAC_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='SAC ' + PID_labels[i % len(PID_labels)])
+        axs[1,0].step(t, np.median(GS_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='GS ' + PID_labels[i % len(PID_labels)])
+        axs[1,0].step(t, np.median(const_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='Constant ' + PID_labels[i % len(PID_labels)])
     axs[1,0].set_ylabel('$F_R$ PID Action')
     axs[1,0].legend(loc='upper center', bbox_to_anchor=(2.5, 1.15),
-          ncol=4,frameon=False)
+          ncol=3,frameon=False)
     for i in range(3,6):
-        axs[1,1].step(t, np.median(DFO_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='DFO ' +PID_labels[i % len(PID_labels)])
-        axs[1,1].step(t, np.median(SAC_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='SAC ' +PID_labels[i % len(PID_labels)])
+        axs[1,1].step(t, np.median(GS_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='GS ' +PID_labels[i % len(PID_labels)])
+        axs[1,1].step(t, np.median(const_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='const ' +PID_labels[i % len(PID_labels)])
     axs[1,1].set_ylabel('$F_M$ PID Action')
     #axs[1,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.4),
           #ncol=4,frameon=False)
     for i in range(6,9):
-        axs[1,2].step(t, np.median(DFO_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='DFO' +PID_labels[i % len(PID_labels)])
-        axs[1,2].step(t, np.median(SAC_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='SAC' +PID_labels[i % len(PID_labels)])
+        axs[1,2].step(t, np.median(GS_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='GS' +PID_labels[i % len(PID_labels)])
+        axs[1,2].step(t, np.median(const_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='const' +PID_labels[i % len(PID_labels)])
     axs[1,2].set_ylabel('$B$ PID Action')
     #axs[1,2].legend(loc='upper center', bbox_to_anchor=(0.5, 1.4),
           #ncol=4,frameon=False)
     
     for i in range(9,12):
-        axs[1, 3].step(t, np.median(DFO_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='DFO' +PID_labels[i % len(PID_labels)])
-        axs[1,3].step(t, np.median(SAC_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='SAC' +PID_labels[i % len(PID_labels)])
+        axs[1, 3].step(t, np.median(GS_a_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors_PID[i % len(colors_PID)], label='GS' +PID_labels[i % len(PID_labels)])
+        axs[1,3].step(t, np.median(const_a_data[i,:,:],axis =1), where='post', color=colors_PID[i % len(colors_PID)], label='const' +PID_labels[i % len(PID_labels)])
     axs[1,3].set_ylabel('$D$ PID Action')
     #axs[2,1].legend(loc='upper center', bbox_to_anchor=(0.5, 1.4),
           #ncol=4,frameon=False)
 
     for i in range(2):
-        axs[0,3].step(t, np.median(DFO_c_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors[i+2 % len(colors)], label='DFO ' +control_labels[i])
-        axs[0,3].fill_between(t,np.min(DFO_c_data[i,:,:],axis = 1),np.max(DFO_c_data[i,:,:],axis = 1),color = colors[i+2 % len(colors)],alpha = 0.2,edgecolor = 'none')
-        axs[0,3].step(t, np.median(SAC_c_data[i,:,:],axis =1), where='post', color=colors[i % len(colors)], label='SAC ' +control_labels[i])
-        axs[0,3].fill_between(t,np.min(SAC_c_data[i,:,:],axis = 1),np.max(SAC_c_data[i,:,:],axis = 1),color = colors[i % len(colors)],alpha = 0.2,edgecolor = 'none')
+        axs[0,3].step(t, np.median(GS_c_data[i,:,:],axis =1), where='post', linestyle='dashed', color=colors[i+2 % len(colors)], label='GS ' +control_labels[i])
+        axs[0,3].fill_between(t,np.min(GS_c_data[i,:,:],axis = 1),np.max(GS_c_data[i,:,:],axis = 1),color = colors[i+2 % len(colors)],alpha = 0.2,edgecolor = 'none')
+        axs[0,3].step(t, np.median(const_c_data[i,:,:],axis =1), where='post', color=colors[i % len(colors)], label='const ' +control_labels[i])
+        axs[0,3].fill_between(t,np.min(const_c_data[i,:,:],axis = 1),np.max    (const_c_data[i,:,:],axis = 1),color = colors[i % len(colors)],alpha = 0.2,edgecolor = 'none')
     axs[0,3].set_ylabel('Flowrate (h$^{-1}$)')
     axs[0,3].legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
           ncol=2,frameon=False)
 
     for i in range(2,4):
-        axs[0,2].step(t, np.median(DFO_c_data[i, :, :], axis =1),  where='post',  linestyle='dashed',  color=colors[i+2 % len(colors)],  label='DFO ' +control_labels[i])
-        axs[0, 2].fill_between(t,  np.min(DFO_c_data[i, :, :], axis = 1), np.max(DFO_c_data[i, :, :], axis = 1), color = colors[i+2 % len(colors)], alpha = 0.2, edgecolor = 'none')
-        axs[0, 2].step(t,  np.median(SAC_c_data[i, :, :], axis =1),  where='post',  color=colors[i % len(colors)],  label='SAC ' +control_labels[i])
-        axs[0, 2].fill_between(t,  np.min(SAC_c_data[i, :, :], axis = 1), np.max(SAC_c_data[i, :, :], axis = 1), color = colors[i % len(colors)], alpha = 0.2, edgecolor = 'none')
+        axs[0,2].step(t, np.median(GS_c_data[i, :, :], axis =1),  where='post',  linestyle='dashed',  color=colors[i+2 % len(colors)],  label='GS ' +control_labels[i])
+        axs[0, 2].fill_between(t, np.min(GS_c_data[i, :, :], axis = 1), np.max(GS_c_data[i, :, :], axis = 1), color = colors[i+2 % len(colors)], alpha = 0.2, edgecolor = 'none')
+        axs[0, 2].step(t,  np.median(const_c_data[i, :, :], axis =1),  where='post',  color=colors[i % len(colors)],  label='const ' +control_labels[i])
+        axs[0, 2].fill_between(t,  np.min(const_c_data[i, :, :], axis = 1), np.max(const_c_data[i, :, :], axis = 1), color = colors[i % len(colors)], alpha = 0.2, edgecolor = 'none')
     axs[0, 2].set_ylabel('Flowrate (h$^{-1}$)')
     axs[0,2].legend(loc='upper center', bbox_to_anchor=(0.5, 1.15),
                     ncol=2, frameon=False)
 
     plt.subplots_adjust(hspace = 0.3)
     plt.subplots_adjust(wspace = 0.3)
-    plt.savefig('PG_DFO_Comparison_wnoise_wF0_1602.pdf')
+    plt.savefig('PG_GS_Comparison_wnoise_wF0_1602.pdf')
     plt.show()
 
 
@@ -187,11 +187,11 @@ def rollout_test(Ks, ns, PID):
     return states, actions, tot_rew,controls
 
 # Rollout const
-Ks_const = np.load('GS_const.npy')
+Ks_const = np.load('GS_const (1).npy')
 s_const,a_const,r_const,c_const = rollout_test(Ks_const, ns, PID = 'const')
 
 # Rollout GS
-Ks_GS = np.load('GS.npy')
+Ks_GS = np.load('GS (1).npy')
 s_GS,a_GS,r_GS,c_GS = rollout_test(Ks_GS, ns, PID = 'GS')
 
 # Plot Comparison
