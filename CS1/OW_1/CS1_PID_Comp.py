@@ -9,7 +9,9 @@ from scipy.optimize import differential_evolution, minimize
 
 ns = 240
 reps = 10
-Ca_des = [0.95 for i in range(int(ns/3))] + [0.9 for i in range(int(ns/3))] + [0.85 for i in range(int(ns/3))]         
+env = reactor_class(test = True, ns = 240, PID_vel = True)
+Ca_des = env.SP[0][0]
+
 T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
 
 
@@ -17,7 +19,7 @@ T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [
 def rollout(Ks, PID_Form,opt,reps):
   ns = 240
  
-  Ca_des = [0.95 for i in range(int(ns/3))] + [0.9 for i in range(int(ns/3))] + [0.85 for i in range(int(ns/3))]  
+  Ca_des =  [0.85 for i in range(int(2*ns/5))] + [0.4 for i in range(int(ns/5))] + [0.1 for i in range(int(2*ns/5))]
   T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
   Ca_eval = np.zeros((ns,reps))
   T_eval = np.zeros((ns,reps))
@@ -25,12 +27,12 @@ def rollout(Ks, PID_Form,opt,reps):
   ks_eval = np.zeros((3,ns,reps))
   r_eval = np.zeros((1,reps))
   SP = np.array([Ca_des,T_des])
-  x_norm = np.array(([-200,0,0.01],[0,20,10]))
+  
   if PID_Form == 'pos':
     env = reactor_class(test = True, ns = 240, PID_pos = True)
   elif PID_Form == 'vel':
     env = reactor_class(test = True, ns = 240, PID_vel = True)
-  
+  x_norm = env.x_norm
   for r_i in range(reps):
     s_norm,_ = env.reset()
     s = s_norm*(env.observation_space.high - env.observation_space.low) + env.observation_space.low
@@ -42,7 +44,7 @@ def rollout(Ks, PID_Form,opt,reps):
     r_tot = 0
     Ks_i = 0
     for i in range(1,ns):
-      if i % 80 == 0:
+      if i % 240 == 0:
         Ks_i += 1
       s_norm, r, done, _,info = env.step(Ks[Ks_i*3:(Ks_i+1)*3])
       
@@ -124,8 +126,8 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,SP,ns):
 
 
 
-bounds = [(-1,1)]*9
-x0_orig = np.array([np.load('GS_Global_vel_const.npy')]*3).flatten()
+bounds = [(-1,1)]*3
+x0_orig = np.array([np.load('GS_Global_vel_const.npy')]*10).flatten()
 
 # x_norm = np.array(([-200,0,0.01],[0,20,10]))
 
@@ -140,11 +142,11 @@ x0_orig = np.array([np.load('GS_Global_vel_const.npy')]*3).flatten()
 #     with open('current_function_value.txt', 'w') as f:
 #         f.write(str(convergence))
 # print('Starting Velocity Opt')
-result_vel =  differential_evolution(rollout, polish = False, popsize = 10, bounds=bounds, args= ('vel', True,1), maxiter = 250,disp = True)
+result_vel =  differential_evolution(rollout, polish = False, popsize = 3, bounds=bounds, args= ('vel', True,3), maxiter = 150,disp = True)
 
 # result_vel = minimize(rollout,x0=x0_orig,bounds=bounds,tol=1e-7,args= ('vel', True,1), method='powell', options={'maxfev':2000,'disp':True})
-np.save('GS_Global_vel.npy', result_vel.x)
-Ks_vel = np.load('GS_Global_vel.npy')
+np.save('GS_const.npy', result_vel.x)
+Ks_vel = np.load('GS_const.npy')
 # Ks_vel = np.load('current_solution (9).npy')
 # Ks_vel = np.load('GS_Global_vel_const.npy')
 # np.save('GS_Global_vel_const.npy',Ks_vel)

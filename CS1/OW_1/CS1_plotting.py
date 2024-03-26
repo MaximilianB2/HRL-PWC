@@ -41,10 +41,9 @@ class Net(torch.nn.Module):
     mu = self.output_mu(y)
     log_std = self.output_std(y) 
     dist = torch.distributions.Normal(mu, log_std.exp()+ 1e-6)
-    out = dist.sample()                                         
+    y = dist.sample()                                         
     if self.deterministic:
-      y = mu
-    y = F.tanh(out) #[-1,1]
+      y = F.tanh(mu).detach().numpy()
    
     
     return y
@@ -54,16 +53,16 @@ best_policy.load_state_dict(torch.load('best_policy_DFO_Vel_002.pth'))
 ns = 240
 env = reactor_class(test = True,ns = 240,PID_vel=True)
 
-Ca_des = [0.95 for i in range(int(ns/3))] + [0.9 for i in range(int(ns/3))] + [0.85 for i in range(int(ns/3))]  
+Ca_des = env.SP[0][0]
 T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
 
-model = SAC.load('SAC_Vel_1.5E5_1403')
+model = SAC.load('SAC_Vel_0403_newSP')
 reps = 10
 Ca_eval_PG = np.zeros((ns,reps))
 T_eval_PG = np.zeros((ns,reps))
 Tc_eval_PG = np.zeros((ns,reps))
 ks_eval_PG = np.zeros((3,ns,reps))
-r_eval = np.zeros((1,reps))
+r_eval_PG = np.zeros((1,reps))
 SP = np.array([Ca_des,T_des])
 for r_i in range(reps):
   s_norm,_ = env.reset()
@@ -74,7 +73,7 @@ for r_i in range(reps):
   a_policy = model.predict(s_norm,deterministic=True)[0]
 
   a_sim = a_policy
-  x_norm = np.array(([-200,0,0.01],[0,20,10]))
+  x_norm = env.x_norm
   Ks_norm = ((a_policy + 1) / 2) * (x_norm[1] - x_norm[0]) + x_norm[0]
       
 
@@ -84,7 +83,7 @@ for r_i in range(reps):
   r_tot = 0
   for i in range(1,ns):
     if i % 5 == 0:
-      a_policy = model.predict(s_norm,deterministic=True)[0]
+       a_policy = model.predict(s_norm,deterministic=True)[0]
           
       
     a_copy = copy.deepcopy(a_sim)
@@ -97,8 +96,8 @@ for r_i in range(reps):
     T_eval_PG[i,r_i] = s[1]
     
     Tc_eval_PG[i,r_i] = env.u_history[-1]
-  r_eval[:,r_i] = r_tot
-print('PG-RL (reward): ', np.round(-1*np.mean(r_eval),2))
+  r_eval_PG[:,r_i] = r_tot
+print('PG-RL (reward): ', np.round(-1*np.mean(r_eval_PG),2))
 ISE_PG = np.sum((Ca_des - np.median(Ca_eval_PG,axis=1))**2)
 print('PG-RL (ISE): ',np.round(ISE_PG,3))
 
@@ -108,7 +107,7 @@ Ca_eval_EA = np.zeros((ns,reps))
 T_eval_EA = np.zeros((ns,reps))
 Tc_eval_EA = np.zeros((ns,reps))
 ks_eval_EA = np.zeros((3,ns,reps))
-r_eval = np.zeros((1,reps))
+r_eval_EA = np.zeros((1,reps))
 SP = np.array([Ca_des,T_des])
 for r_i in range(reps):
   s_norm,_ = env.reset()
@@ -118,7 +117,7 @@ for r_i in range(reps):
   Tc_eval_EA[0,r_i] = 300.0
   
   a_policy = best_policy(torch.tensor(s_norm))
-  x_norm = np.array(([-200,0,0.01],[0,20,10]))
+  x_norm = env.x_norm
   Ks_norm = ((a_policy + 1) / 2) * (x_norm[1] - x_norm[0]) + x_norm[0]
       
   
@@ -126,7 +125,6 @@ for r_i in range(reps):
   r_tot = 0
   for i in range(1,ns):
     if i % 5 == 0:
-      
       a_policy = best_policy(torch.tensor(s_norm))
       
     Ks_norm = ((a_policy + 1) / 2) * (x_norm[1] - x_norm[0]) + x_norm[0]
@@ -141,10 +139,10 @@ for r_i in range(reps):
     T_eval_EA[i,r_i] = s[1]
     
     Tc_eval_EA[i,r_i] = env.u_history[-1]
-  r_eval[:,r_i] = r_tot
-print('EA-RL (reward): ',np.round(-1*np.mean(r_eval),2))
+  r_eval_EA[:,r_i] = r_tot
+print('EA-RL (reward): ',np.round(-1*np.mean(r_eval_EA),2))
 ISE_EA = np.sum((Ca_des - np.median(Ca_eval_EA,axis=1))**2)
-print('RA-RL (ISE): ',np.round(ISE_EA,3))
+print('EA-RL (ISE): ',np.round(ISE_EA,3))
 
 
 
@@ -152,7 +150,7 @@ print('RA-RL (ISE): ',np.round(ISE_EA,3))
 def rollout(Ks,PID,reps):
   ns = 240
   env = reactor_class(test = True, ns = 240, PID_vel = True)
-  Ca_des = [0.95 for i in range(int(ns/3))] + [0.9 for i in range(int(ns/3))] + [0.85 for i in range(int(ns/3))]  
+  Ca_des = env.SP[0][0]  
   T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
   Ca_eval = np.zeros((ns,reps))
   T_eval = np.zeros((ns,reps))
@@ -160,7 +158,7 @@ def rollout(Ks,PID,reps):
   r_eval = np.zeros((1,reps))
   ks_eval = np.zeros((3,ns,reps))
   SP = np.array([Ca_des,T_des])
-  x_norm = np.array(([-200,0,0.01],[0,20,10]))
+  x_norm = env.x_norm
 
   for r_i in range(reps):
     s_norm,_ = env.reset()
@@ -174,7 +172,7 @@ def rollout(Ks,PID,reps):
     Ks_i = 0
     for i in range(1,ns):
       if PID == 'GS':
-        if i % 80 == 0:
+        if i % 40 == 0:
           Ks_i += 1
       if PID == 'const':
         if i % 240 == 0:
@@ -196,7 +194,7 @@ def rollout(Ks,PID,reps):
 
   print(PID + ' (reward)', np.round(r[0],2))
   print(PID + ' ISE', np.round(ISE,3))
-  return Ca_eval, T_eval, Tc_eval, ks_eval
+  return Ca_eval, T_eval, Tc_eval, ks_eval,r_eval
 
 
 def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_EA, T_dat_EA, Tc_dat_EA,ks_eval_EA,Ca_dat_const, T_dat_const, Tc_dat_const,Ca_dat_GS, T_dat_GS, Tc_dat_GS, ks_eval_GS, ks_eval_const,SP,ns):
@@ -207,11 +205,11 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_EA, T_
   col = ['tab:orange','tab:red','tab:blue','tab:orange','tab:red','tab:blue']
   col_fill = ['tab:orange','tab:red','tab:blue','tab:orange','tab:red','tab:blue']
 
-  axs[0].plot(t, np.median(Ca_dat_PG,axis=1), color = 'tab:red', lw=1.5, label = 'PG-RL')
+  axs[0].plot(t, np.median(Ca_dat_PG,axis=1), color = 'tab:red', lw=1, alpha = 0.5,label = 'PG-RL')
   axs[0].plot(t,np.median(Ca_dat_EA,axis=1), color = 'tab:blue', lw=1.5, label = 'EA-RL')
   axs[0].plot(t,np.median(Ca_dat_const,axis=1), color = 'tab:green', lw=1.5, label = 'Constant')
   axs[0].plot(t,np.median(Ca_dat_GS,axis=1), color = 'tab:orange', lw=1.5, label = 'GS')
-  axs[0].fill_between(t, np.min(Ca_dat_PG,axis=1), np.max(Ca_dat_PG,axis=1),color = 'tab:red', alpha=0.2,edgecolor  = 'none')
+  axs[0].fill_between(t, np.min(Ca_dat_PG,axis=1), np.max(Ca_dat_PG,axis=1),color = 'tab:red', alpha=0.1,edgecolor  = 'none')
   axs[0].fill_between(t, np.min(Ca_dat_EA,axis=1), np.max(Ca_dat_EA,axis=1),color = 'tab:blue', alpha=0.2,edgecolor  = 'none')
   axs[0].fill_between(t, np.min(Ca_dat_const,axis=1), np.max(Ca_dat_const,axis=1),color = 'tab:green', alpha=0.2,edgecolor  = 'none')
   axs[0].fill_between(t, np.min(Ca_dat_GS,axis=1), np.max(Ca_dat_GS,axis=1),color = 'tab:orange', alpha=0.2,edgecolor  = 'none')
@@ -223,12 +221,12 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_EA, T_
   axs[0].set_xlim(min(t), max(t))
   axs[0].grid(True, alpha = 0.5)
   axs[0].set_axisbelow(True)
-
-  axs[1].plot(t, np.median(T_dat_PG,axis=1), color = 'tab:red', lw=1.5, label = 'PG-RL')
+  axs[0].set_ylim(0.7,0.9)
+  axs[1].plot(t, np.median(T_dat_PG,axis=1), color = 'tab:red', lw=1,alpha = 0.5,label = 'PG-RL')
   axs[1].plot(t,np.median(T_dat_EA,axis=1), color = 'tab:blue', lw=1.5, label = 'EA-RL')
   axs[1].plot(t,np.median(T_dat_const,axis=1), color = 'tab:green', lw=1.5, label = 'Constant')
   axs[1].plot(t,np.median(T_dat_GS,axis=1), color = 'tab:orange', lw=1.5, label = 'GS')
-  axs[1].fill_between(t, np.min(T_dat_PG,axis=1), np.max(T_dat_PG,axis=1),color = 'tab:red', alpha=0.2,edgecolor  = 'none')
+  axs[1].fill_between(t, np.min(T_dat_PG,axis=1), np.max(T_dat_PG,axis=1),color = 'tab:red', alpha=0.1,edgecolor  = 'none')
   axs[1].fill_between(t, np.min(T_dat_EA,axis=1), np.max(T_dat_EA,axis=1),color = 'tab:blue', alpha=0.2,edgecolor  = 'none')
   axs[1].fill_between(t, np.min(T_dat_const,axis=1), np.max(T_dat_const,axis=1),color = 'tab:green', alpha=0.2,edgecolor  = 'none')
   axs[1].fill_between(t, np.min(T_dat_GS,axis=1), np.max(T_dat_GS,axis=1),color = 'tab:orange', alpha=0.2,edgecolor  = 'none')
@@ -238,7 +236,7 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_EA, T_
   axs[1].set_xlim(min(t), max(t))
   axs[1].grid(True, alpha = 0.5)
   axs[1].set_axisbelow(True)
-
+  axs[1].set_ylim(325,340)
   axs[2].step(t, np.median(Tc_dat_PG,axis=1), color = 'tab:red', linestyle = 'dashed' , where = 'post',lw=1, label = 'PG-RL')
   axs[2].step(t, np.median(Tc_dat_EA,axis=1), color = 'tab:blue', linestyle = 'dashed', where= 'post',lw=1, label = 'EA-RL')
   axs[2].step(t, np.median(Tc_dat_const,axis=1), color = 'tab:green', linestyle = 'dashed', where= 'post',lw=1, label = 'Constant')
@@ -339,9 +337,42 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_EA, T_
   plt.show()
 
   
-Ks_GS = np.load('GS_Global_vel.npy')
-Ks_const = np.load('GS_Global_vel_const.npy')
-Ca_dat_const, T_dat_const, Tc_dat_const, ks_eval_const = rollout(Ks_const, 'const',reps = 10)
-Ca_dat_GS, T_dat_GS, Tc_dat_GS, ks_eval_GS = rollout(Ks_GS,'GS', reps = 10)
+Ks_GS = np.load('GS_6.npy')
+Ks_const = np.load('GS_const.npy')
+Ca_dat_const, T_dat_const, Tc_dat_const, ks_eval_const, r_eval_const = rollout(Ks_const, 'const',reps = reps)
+Ca_dat_GS, T_dat_GS, Tc_dat_GS, ks_eval_GS, r_eval_GS = rollout(Ks_GS,'GS', reps = reps)
 
 plot_simulation_comp(Ca_eval_PG, T_eval_PG, Tc_eval_PG,ks_eval_PG,Ca_eval_EA, T_eval_EA, Tc_eval_EA,ks_eval_EA,Ca_dat_const, T_dat_const, Tc_dat_const,Ca_dat_GS, T_dat_GS, Tc_dat_GS, ks_eval_GS, ks_eval_const,SP,ns)
+
+
+# Return distribution
+# bins = np.linspace(min(np.min(r_eval_EA), np.min(r_eval_PG), np.min(r_eval_const), np.min(r_eval_GS)), max(np.max(r_eval_EA), np.max(r_eval_PG), np.max(r_eval_const), np.max(r_eval_GS)), 75)
+# plt.figure(figsize=(12, 8))  
+# plt.grid(True, linestyle='--', alpha=0.6)
+# plt.gca().set_axisbelow(True) 
+# plt.hist(r_eval_EA.flatten(), bins=bins, color='tab:blue', alpha=0.5, label='EA-RL', edgecolor='black', density=True)
+# plt.hist(r_eval_PG.flatten(), bins=bins, color='tab:red', alpha=0.5, label='PG-RL', edgecolor='black', density=True)
+# plt.hist(r_eval_const.flatten(), bins=bins, color='tab:green', alpha=0.5, label='Constant', edgecolor='black', density=True)
+# plt.hist(r_eval_GS.flatten(), bins=bins, color='tab:orange', alpha=0.5, label='GS', edgecolor='black', density=True)
+# plt.xlabel('Return', fontsize=14)  
+# plt.ylabel('Frequency', fontsize=14)  
+# plt.title('Distribution of Expected Return', fontsize=16)  
+# plt.legend(fontsize=12)
+# plt.savefig('return_dist_cs1.pdf')  
+# plt.show()
+
+import seaborn as sns
+
+sns.kdeplot(r_eval_EA.flatten(), color='tab:blue', label='EA-RL')
+sns.kdeplot(r_eval_PG.flatten(), color='tab:red', label='PG-RL')
+sns.kdeplot(r_eval_const.flatten(), color='tab:green', label='Constant')
+#sns.kdeplot(r_eval_GS.flatten(), color='tab:orange', label='GS')
+
+plt.xlabel('Return', fontsize=14)
+plt.ylabel('Density', fontsize=14)
+plt.title('Distribution of Return', fontsize=16)
+plt.legend(fontsize=12)
+plt.grid(True, linestyle='--', alpha=0.6)
+plt.gca().set_axisbelow(True)
+plt.savefig('return_dist_cs1.pdf')
+plt.show()

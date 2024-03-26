@@ -84,17 +84,23 @@ old_swarm  = 1e8
 new_swarm = 0
 tol = 0.01
 ns = 240
-Ca_des1 = [0.95 for i in range(int(ns/2))] + [0.85 for i in range(int(ns/2))]
+# Ca_des1 = [0.95 for i in range(int(ns/2))] + [0.85 for i in range(int(ns/2))]
 T_des1  = [330 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
 
-Ca_des2 = [0.9 for i in range(int(ns/2))] + [0.95 for i in range(int(ns/2))]
+# Ca_des2 = [0.9 for i in range(int(ns/2))] + [0.95 for i in range(int(ns/2))]
 T_des2  = [340 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
 
-Ca_des3 = [0.95 for i in range(int(ns/2))] + [0.8 for i in range(int(ns/2))]
+# Ca_des3 = [0.95 for i in range(int(ns/2))] + [0.8 for i in range(int(ns/2))]
 T_des3  = [320 for i in range(int(ns/2))] + [330 for i in range(int(ns/2))]
 
-Ca_des4 = [0.9 for i in range(int(ns/2))] + [0.85 for i in range(int(ns/2))]
+# Ca_des4 = [0.9 for i in range(int(ns/2))] + [0.85 for i in range(int(ns/2))]
 T_des4  = [320 for i in range(int(ns/2))] + [340 for i in range(int(ns/2))]
+
+Ca_des1 = Ca_des3 = Ca_des2 = Ca_des4 =  [0.85 for i in range(int(ns/3))] + [0.4 for i in range(int(ns/3))] + [0.1 for i in range(int(ns/3))]
+T_des1  = [330 for i in range(int(ns/2))] + [320 for i in range(int(ns/2))]
+
+
+
 
 Ca_disturb = [0.8 for i in range(ns)]
 T_disturb = [330 for i in range(ns)]
@@ -111,14 +117,16 @@ r_list = []
 r_list_i =[]
 p_list  =[]
 
-evals_rs = 30
+evals_rs = 3
 
 params = policy.state_dict()
 #Random Search
+max_param = 0.1
+min_param = max_param*-1
 print('Random search to find good initial policy...')
 for policy_i in range(evals_rs):
     # sample a random policy
-    NNparams_RS  = sample_uniform_params(params, 0.1, -0.1)
+    NNparams_RS  = sample_uniform_params(params, max_param, min_param)
     # consruct policy to be evaluated
     policy.load_state_dict(NNparams_RS)
     # evaluate policy
@@ -131,13 +139,14 @@ for policy_i in range(evals_rs):
 policy.load_state_dict(init_params)
 #PSO Optimisation paramters
 optim = ParticleSwarmOptimizer(policy.parameters(),
-                               inertial_weight=0.5,
-                               num_particles=15,
-                               max_param_value=0.2,
-                               min_param_value=-0.2)
+                               inertial_weight=0.6,
+                               num_particles=100,
+                               max_param_value=max_param,
+                               min_param_value=min_param)
 print('Best reward after random search:', best_reward)
 print('PSO Algorithm...')
 while i < max_iter and abs(best_reward - old_swarm[i]) > tol :
+    print(f'Iteration: {i+1} / {max_iter}')
     if i > 0:
       old_swarm[i] = min(r_list_i)
       del r_list_i[:]
@@ -152,7 +161,7 @@ while i < max_iter and abs(best_reward - old_swarm[i]) > tol :
       best_reward = new_swarm
       best_policy = p_list[r_list.index(new_swarm)]
       
-      print('New best reward:', best_reward,'iteration:',i+1,'/',max_iter)
+      print(f'New best reward: {best_reward} ({best_reward/3} per training episode')
     i += 1
 print('Finished optimisation')
 print('Best reward:', best_reward)

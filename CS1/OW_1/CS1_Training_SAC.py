@@ -50,8 +50,8 @@ def linear_schedule(initial_value: float) -> Callable[[float], float]:
     return func
 model = SAC("MlpPolicy", env, verbose=1,learning_rate=linear_schedule(1e-2),seed=0,device = 'cuda')
 # print(model.policy)
-model.learn(int(3e4))
-model.save('SAC_Vel_0403')
+model.learn(int(10e4))
+model.save('SAC_Vel_0403_newSP')
 SAC_Training_Rewards = reward_callback.rewards
 
 # def learning_curve_plot(r):

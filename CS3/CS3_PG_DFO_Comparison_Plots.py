@@ -11,7 +11,7 @@ from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes, mark_inset
 from RSR_Model_1602 import RSR
 
 # Initialise Env
-ns = 300
+ns = 150
 env = RSR(ns,test=True,plot=False)
 
 def plot_simulation(s_DFO,s_SAC,a_DFO,a_SAC,c_DFO,c_SAC,ns,ISE_DFO,ISE_SAC):
