@@ -6,7 +6,7 @@ import copy
 import torch
 import torch.nn.functional as F
 from scipy.optimize import differential_evolution, minimize
-ns = 240
+ns = 120
 env = reactor_class(test = True, ns = ns, PID_vel = True)
 Ca_des =  env.SP[0][0]
 T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
@@ -52,7 +52,7 @@ class Net(torch.nn.Module):
 
     return y
 def rollout(Ks, PID_Form,opt,reps):
-  ns = 240
+  ns = 120
  
   
   T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
@@ -80,10 +80,10 @@ def rollout(Ks, PID_Form,opt,reps):
     Ks_i = 0
     for i in range(1,ns):
       if PID_Form == 'Const':
-       if i % 300 == 0:
+       if i % 120 == 0:
           Ks_i += 1
       elif PID_Form == 'GS':
-        if i % 40 == 0:
+        if i % 20 == 0:
           Ks_i += 1
       s_norm, r, done, _,info = env.step(Ks[Ks_i*3:(Ks_i+1)*3])
       
@@ -125,6 +125,7 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_const,
   axs[0].set_xlabel('Time (min)')
   axs[0].legend(loc='best')
   axs[0].set_xlim(min(t), max(t))
+  axs[0].grid(True)
 
   axs[1].plot(t, np.median(T_dat_PG,axis=1), color = 'tab:red', lw=1, label = 'Gain Schedule')
   axs[1].fill_between(t, np.min(T_dat_PG,axis=1), np.max(T_dat_PG,axis=1),color = 'tab:red', alpha=0.2,edgecolor  = 'none')
@@ -135,14 +136,15 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_const,
   axs[1].set_xlabel('Time (min)')
   axs[1].legend(loc='best')
   axs[1].set_xlim(min(t), max(t))
-   
+  axs[1].grid(True)
   axs[2].step(t, np.median(Tc_dat_PG,axis=1), color = 'tab:red', linestyle = 'dashed', where = 'post',lw=1, label = 'Gain Schedule')
   axs[2].step(t, np.median(Tc_dat_const,axis=1), color = 'tab:blue', linestyle = 'dashed', where = 'post',lw=1, label = 'Constant Ks')
   axs[2].set_ylabel('Cooling T (K)')
   axs[2].set_xlabel('Time (min)')
   axs[2].legend(loc='best')
   axs[2].set_xlim(min(t), max(t))
-  plt.savefig('gs_vs_const_states.pdf')
+  axs[2].grid(True)
+  plt.savefig('gs_vs_const_states_midop.pdf')
   plt.show()
 
  
@@ -168,7 +170,7 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,Ca_dat_const,
     axs[ks_i].legend(loc='best')
     axs[ks_i].set_xlim(min(t), max(t))
   plt.tight_layout()
-  plt.savefig('gs_vs_const_ks_vel.pdf')
+  plt.savefig('gs_vs_const_ks_vel_mid_op.pdf')
   plt.show()
 SP = np.array([Ca_des,T_des])
 
@@ -266,9 +268,9 @@ print('PG-RL (reward): ', np.round(-1*np.mean(r_eval_PG),2))
 ISE_PG = np.sum((Ca_des - np.median(Ca_eval_PG,axis=1))**2)
 print('PG-RL (ISE): ',np.round(ISE_PG,3))
 
-Ks_GS = np.load('GS_6.npy')
+Ks_GS = np.load('GS_6_midop.npy')
 Ca_dat_GS, T_dat_GS, Tc_dat_GS, ks_eval_GS = rollout(Ks_GS, 'GS', opt = False,reps = 10)
 
-Ks_const = np.load('GS_const.npy')
+Ks_const = np.load('GS_const_midop.npy')
 Ca_dat_const, T_dat_const, Tc_dat_const, ks_eval_const = rollout(Ks_const, 'const', opt = False,reps = 10)
-plot_simulation_comp(Ca_eval_EA, T_eval_EA, Tc_eval_EA,ks_eval_EA,Ca_dat_const, T_dat_const, Tc_dat_const,ks_eval_const,SP,ns)
+plot_simulation_comp(Ca_dat_GS, T_dat_GS, Tc_dat_GS,ks_eval_GS,Ca_dat_const, T_dat_const, Tc_dat_const,ks_eval_const,SP,ns)

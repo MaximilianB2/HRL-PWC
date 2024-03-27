@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from scipy.optimize import minimize
 
 Tc_n = 102
-Tc_vec = np.linspace(290,304,Tc_n)
+Tc_vec = np.linspace(290,445,Tc_n)
 ns = 240
 env = reactor_class(test = True, ns=ns, DS= True)
 
@@ -20,25 +20,22 @@ for i,Tc in enumerate(Tc_vec):
   for ns_i in range(ns-1):
     s_norm, r, done, info,_  = env.step(Tc)
     s = s_norm*(env.observation_space.high - env.observation_space.low) + env.observation_space.low
-   
-  CV[i,:] = s[:2]
+ 
+  CV[i,:] = env.state[1]
 y = np.linspace(1,1,Tc_n)
 # print(CV)
 SP = [0.85 for i in range(int(Tc_n/3))] + [0.4 for i in range(int(Tc_n/3))] + [0.1 for i in range(int(Tc_n/3))]
-plt.subplot(211)
-plt.plot(np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0]), CV[:,0], color='tab:blue', label = 'Equilibrium Concentration')
-plt.step(np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0]), SP ,color = 'black',linestyle= '--',alpha = 0.5,label ='Proposed Setpoints')
+plt.figure()
+plt.plot(Tc_vec, CV[:,0], color='tab:blue', label = 'Equilibrium Concentration')
+
 # plt.fill_between(np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0]), y, where=(np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0]) > 21) & (np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0]) < 28), color='tab:red', alpha=0.4, label="Unstable", edgecolor=None)
 # plt.fill_between(np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0]), y, where=(np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0]) <= 22) | (np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0]) >= 27), color='tab:green', alpha=0.4, label="Stable", edgecolor=None)
 
-plt.ylabel('Concentration of species A')
+plt.ylabel('Concentration of species B')
+plt.xlabel('Cooling Temperature (K)')
 plt.ylim(0,1)
 plt.grid(True)
 plt.legend()
-plt.xlim(np.min(np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0])),np.max(np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0])))
-plt.subplot(212)
-plt.step(np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0]),Tc_vec,color = 'tab:red')
-plt.grid(True)
-plt.ylabel('Cooling Temperature')
-plt.xlim(np.min(np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0])),np.max(np.linspace(0,Tc_vec.shape[0],Tc_vec.shape[0])))
+plt.xlim(np.min(Tc_vec),np.max(Tc_vec))
+plt.savefig('CS1_DS.pdf')
 plt.show()

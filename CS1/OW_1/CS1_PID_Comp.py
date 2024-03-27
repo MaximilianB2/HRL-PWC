@@ -7,9 +7,9 @@ import torch
 import torch.nn.functional as F
 from scipy.optimize import differential_evolution, minimize
 
-ns = 240
+ns = 120
 reps = 10
-env = reactor_class(test = True, ns = 240, PID_vel = True)
+env = reactor_class(test = True, ns = ns, PID_vel = True)
 Ca_des = env.SP[0][0]
 
 T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
@@ -17,7 +17,7 @@ T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [
 
 
 def rollout(Ks, PID_Form,opt,reps):
-  ns = 240
+  ns = 120
  
   Ca_des =  [0.85 for i in range(int(2*ns/5))] + [0.4 for i in range(int(ns/5))] + [0.1 for i in range(int(2*ns/5))]
   T_des  = [325 for i in range(int(2*ns/5))] + [320 for i in range(int(ns/5))] + [327 for i in range(int(2*ns/5))]
@@ -29,22 +29,22 @@ def rollout(Ks, PID_Form,opt,reps):
   SP = np.array([Ca_des,T_des])
   
   if PID_Form == 'pos':
-    env = reactor_class(test = True, ns = 240, PID_pos = True)
+    env = reactor_class(test = True, ns = ns, PID_pos = True)
   elif PID_Form == 'vel':
-    env = reactor_class(test = True, ns = 240, PID_vel = True)
+    env = reactor_class(test = True, ns = ns, PID_vel = True)
   x_norm = env.x_norm
   for r_i in range(reps):
     s_norm,_ = env.reset()
     s = s_norm*(env.observation_space.high - env.observation_space.low) + env.observation_space.low
     Ca_eval[0,r_i] = s[0]
-    T_eval[0,r_i] = s[1]
+    T_eval[0,r_i] = s[3]
     Tc_eval[0,r_i] = 300.0
     Ks_norm = ((Ks[:3] + 1) / 2) * (x_norm[1] - x_norm[0]) + x_norm[0]
     ks_eval[:,0,r_i] = Ks_norm
     r_tot = 0
     Ks_i = 0
     for i in range(1,ns):
-      if i % 240 == 0:
+      if i % 20 == 0:
         Ks_i += 1
       s_norm, r, done, _,info = env.step(Ks[Ks_i*3:(Ks_i+1)*3])
       
@@ -52,7 +52,7 @@ def rollout(Ks, PID_Form,opt,reps):
       r_tot += r
       s = s_norm*(env.observation_space.high - env.observation_space.low) + env.observation_space.low
       Ca_eval[i,r_i] = s[0]
-      T_eval[i,r_i] = s[1]
+      T_eval[i,r_i] = s[3]
       Tc_eval[i,r_i] = env.u_history[-1]
     r_eval[:,r_i] = r_tot
  
@@ -126,7 +126,7 @@ def plot_simulation_comp(Ca_dat_PG, T_dat_PG, Tc_dat_PG,ks_eval_PG,SP,ns):
 
 
 
-bounds = [(-1,1)]*3
+bounds = [(-1,1)]*3*6
 x0_orig = np.array([np.load('GS_Global_vel_const.npy')]*10).flatten()
 
 # x_norm = np.array(([-200,0,0.01],[0,20,10]))
@@ -142,11 +142,11 @@ x0_orig = np.array([np.load('GS_Global_vel_const.npy')]*10).flatten()
 #     with open('current_function_value.txt', 'w') as f:
 #         f.write(str(convergence))
 # print('Starting Velocity Opt')
-result_vel =  differential_evolution(rollout, polish = False, popsize = 3, bounds=bounds, args= ('vel', True,3), maxiter = 150,disp = True)
+result_vel =  differential_evolution(rollout, polish = False, popsize = 1, bounds=bounds, args= ('vel', True,1), maxiter = 150,disp = True)
 
 # result_vel = minimize(rollout,x0=x0_orig,bounds=bounds,tol=1e-7,args= ('vel', True,1), method='powell', options={'maxfev':2000,'disp':True})
-np.save('GS_const.npy', result_vel.x)
-Ks_vel = np.load('GS_const.npy')
+np.save('GS_6_midop.npy', result_vel.x)
+Ks_vel = np.load('GS_6_midop.npy')
 # Ks_vel = np.load('current_solution (9).npy')
 # Ks_vel = np.load('GS_Global_vel_const.npy')
 # np.save('GS_Global_vel_const.npy',Ks_vel)
@@ -159,7 +159,7 @@ Ks_vel = np.load('GS_const.npy')
 # print(Ks_vel)
 # # Ks_vel = Ks_pos =  np.array([-0.5,-0.8,-1,0.8]*48)
 
-SP = np.array([Ca_des,T_des])
+SP = np.array([Ca_des])
 Ca_dat_vel, T_dat_vel, Tc_dat_vel, ks_eval_vel = rollout(Ks_vel, 'vel', opt = False,reps = 10)
 
 plot_simulation_comp(Ca_dat_vel, T_dat_vel, Tc_dat_vel,ks_eval_vel,SP,ns)

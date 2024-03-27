@@ -20,7 +20,7 @@ def PID(Ks, x, x_setpoint, e_history):
     
     u = KpCa*e[0] + (KpCa/KiCa)*sum(e_history[:,0]) + KpCa*KdCa*(e[0]-e_history[-1,0])
     u += Kb
-    u = min(max(u,290),303)
+    u = min(max(u,290),)
 
 
     return u
@@ -31,9 +31,9 @@ def PID_velocity(Ks,x,x_setpoint,e_history,u_prev,ts,s_hist):
     e = x_setpoint - x
    
     
-    u = u_prev[-1] + KpCa*(e[0] - e_history[-1,0]) + (KpCa/KiCa)*e[0]*dt - KpCa*KdCa*(e[0]-2*e_history[-1,0]+e_history[-2,0])/dt
+    u = u_prev[-1] + KpCa*(e[1] - e_history[-1,1]) + (KpCa/KiCa)*e[1]*dt - KpCa*KdCa*(e[1]-2*e_history[-1,1]+e_history[-2,1])/dt
     
-    u = min(max(u,290),350)
+    u = min(max(u,290),450)
     return u
 
 
@@ -46,25 +46,36 @@ def cstr_CS1(x,t,u,Tf,Caf,k0,UA):
 
     # == States == #
     Ca = x[0] # Concentration of A in CSTR (mol/m^3)
-    T  = x[1] # Temperature in CSTR (K)
+    Cb = x[1] # Concentration of B in CSTR (mol/m^3)
+    Cc = x[2] # Concentration of C in CSTR (mol/m^3)
+    T  = x[3] # Temperature in CSTR (K)
 
     # == Process parameters == #
     q      = 100    # Volumetric Flowrate (m^3/sec)
     V      = 100    # Volume of CSTR (m^3)
     rho    = 1000   # Density of A-B Mixture (kg/m^3)
     Cp     = 0.239  # Heat capacity of A-B Mixture (J/kg-K)
-    mdelH  = 5e4    # Heat of reaction for A->B (J/mol)
+    mdelH  = 5e3    # Heat of reaction for A->B (J/mol)
     EoverR = 8750   # E -Activation energy (J/mol), R -Constant = 8.31451 J/mol-1
-    rA     = k0*np.exp(-EoverR/T)*Ca # reaction rate
+    mdelH_BC  = 4e3      # Heat of Reaction for B->C (J/mol) => 5e4
+    EoverR_BC = 10750    # E -Activation Energy (J/mol), R -Constant = 8.31451 J/mol-K !! 10
+    k0_BC     = 8.2e10    # Pre-exponential Factor for A->B (1/sec)# !! 8
+    rA          =    k0*np.exp(-EoverR/T)*Ca # reaction rate
+    rB        = k0_BC*np.exp(-EoverR_BC/T)*Cb
     dCadt  = q/V*(Caf - Ca) - rA     # Calculate concentratioing n derivative
+    dCbdt    = rA - rB - q*Cb/V         # B Concentration Derivative
+    dCcdt    = rB      - q*Cc/V         # B Concentration Derivative
     dTdt   = q/V*(Tf - T) \
               + mdelH/(rho*Cp)*rA \
+              + mdelH_BC/(rho*Cp)*rB \
               + UA/V/rho/Cp*(Tc-T)   # Calculate temperature derivative
 
     # == Return xdot == #
-    xdot    = np.zeros(2)
+    xdot    = np.zeros(4)
     xdot[0] = dCadt
-    xdot[1] = dTdt
+    xdot[1] = dCbdt
+    xdot[2] = dCcdt
+    xdot[3] = dTdt
     
     return xdot
 
@@ -80,14 +91,15 @@ class reactor_class(gym.Env):
     self.test = test
     self.DR = DR
     self.robust_test = robust_test
-    Ca_des1 = [0.84 for i in range(int(ns/2))] + [0.81 for i in range(int(ns/3))] + [0.75 for i in range(int(ns/2))]
-    Ca_des2 = [0.83 for i in range(int(ns/2))] + [0.79 for i in range(int(ns/3))] +  [0.74 for i in range(int(ns/2))]
-    Ca_des3 = [0.86 for i in range(int(ns/2))] + [0.80 for i in range(int(ns/3))] +  [0.76 for i in range(int(ns/2))]
+    Ca_des1 = [0.61 for i in range(int(ns/2))] + [0.76 for i in range(int(ns/3))] + [0.87 for i in range(int(ns/2))]
+    Ca_des2 = [0.6 for i in range(int(ns/2))] + [0.74 for i in range(int(ns/3))] +  [0.86 for i in range(int(ns/2))]
+    Ca_des3 = [0.59 for i in range(int(ns/2))] + [0.75 for i in range(int(ns/3))] +  [0.85 for i in range(int(ns/2))]
     
 
     
     if self.test:
-      Ca_des1 = [0.85 for i in range(int(ns/3))] + [0.80 for i in range(int(ns/3))] + [0.74 for i in range(int(ns/3))]
+      #Ca_des1 = [0.05 for i in range(int(ns/3))] + [0.15 for i in range(int(ns/3))] + [0.25 for i in range(int(ns/3))]
+      Ca_des1 = [0.3 for i in range(int(ns/3))] + [0.45 for i in range(int(ns/3))] + [0.6 for i in range(int(ns/3))]
     
       
     
@@ -108,7 +120,7 @@ class reactor_class(gym.Env):
     self.Caf  = 1     # Feed Concentration (mol/m^3)
 
     # Time Interval (min)
-    self.t = np.linspace(0,1000,ns)
+    self.t = np.linspace(0,100,ns)
 
     # Store results for plotting
     self.Ca = np.ones(len(self.t)) * self.Ca_ss
@@ -148,7 +160,7 @@ class reactor_class(gym.Env):
       self.UA = self.UA_dist_test()
       self.k0 = self.k0_dist_test()
     Ca_des = self.SP[self.SP_i,0][self.i]
-    self.state = np.array([self.Ca_ss,self.T_ss,self.Ca_ss,self.T_ss,Ca_des])
+    self.state = np.array([self.Ca_ss,0,0,self.T_ss,self.Ca_ss,0,0,self.T_ss,Ca_des])
     self.done = False
     if not self.test:
       self.disturb = False
@@ -156,7 +168,8 @@ class reactor_class(gym.Env):
     self.e_history = []
     self.s_history = []
     self.ts = [self.t[self.i],self.t[self.i+1]]
-    self.state_norm = self.state_norm = (self.state -self.observation_space.low)/(self.observation_space.high - self.observation_space.low)
+    self.RL_state = [self.state[i] for i in [1,3,5,7,8]]
+    self.state_norm = (self.RL_state -self.observation_space.low)/(self.observation_space.high - self.observation_space.low)
     return self.state_norm,{}
 
   def step(self, action_policy):
@@ -176,20 +189,20 @@ class reactor_class(gym.Env):
         elif self.SP_i < 2:
           self.SP_i += 1
           self.i = 0
-          self.state = np.array([self.Ca_ss,self.T_ss,self.Ca_ss,self.T_ss,Ca_des])
+          self.state = np.array([self.Ca_ss,0,0,self.T_ss,self.Ca_ss,0,0,self.T_ss,Ca_des])
           self.u_history = []
           self.e_history = []
         else:
           self.done = True
-          
-    
-    self.state_norm = self.state_norm = (self.state -self.observation_space.low)/(self.observation_space.high - self.observation_space.low)
+
+    self.RL_state = [self.state[i] for i in [1,3,5,7,8]]
+    self.state_norm = (self.RL_state -self.observation_space.low)/(self.observation_space.high - self.observation_space.low)
     return self.state_norm,rew,self.done,False,self.info
 
   def reactor(self,state,action,Ca_des):
     if not self.DR or not self.robust_test:
       k0 = 7.2e10 #1/sec
-      UA = 5e4 # W/K
+      UA = 7e5 # W/K
     if self.robust_test or self.DR:
       k0 = self.k0
       UA = self.UA
@@ -197,7 +210,9 @@ class reactor_class(gym.Env):
     # Steady State Initial Conditions for the States
 
     Ca = state[0]
-    T  = state[1]
+    Cb = state[1]
+    Cc = state[2]
+    T  = state[3]
   
     x_sp    = np.array([Ca_des])
     
@@ -221,18 +236,25 @@ class reactor_class(gym.Env):
       u = self.u_DS
     # simulate system
 
-    y       = odeint(cstr_CS1,state[0:2],self.ts,args=(u,self.Tf,self.Caf,k0,UA))
+    y       = odeint(cstr_CS1,state[0:4],self.ts,args=(u,self.Tf,self.Caf,k0,UA))
 
     # add process disturbance
-    Ca_plus = y[-1][0] #+ np.random.uniform(low=-0.00075,high=0.00075)
-    T_plus  = y[-1][1] #+ np.random.uniform(low=-.025,high=0.025)
+
+    Ca_plus = y[-1][0] + np.random.uniform(low=-0.00075,high=0.00075)
+    Cb_plus = y[-1][1] + np.random.uniform(low=-0.00075,high=0.00075)
+    Cc_plus = y[-1][2] + np.random.uniform(low=-0.00075,high=0.00075)
+    T_plus  = y[-1][3] + np.random.uniform(low=-.025,high=0.025)
     # collect data
-    state_plus = np.zeros(5)
+    state_plus = np.zeros(9)
     state_plus[0]   = Ca_plus
-    state_plus[1]   = T_plus
-    state_plus[2]   = Ca
-    state_plus[3]   = T
-    state_plus[4]   = Ca_des
+    state_plus[1]   = Cb_plus
+    state_plus[2]   = Cc_plus
+    state_plus[3]   = T_plus
+    state_plus[4]   = Ca
+    state_plus[5]   = Cb
+    state_plus[6]   = Cc
+    state_plus[7]   = T
+    state_plus[8]   = Ca_des
     # compute tracking error
     e  = x_sp-state[0:2]
     self.e_history.append((x_sp-state[0:2]))
@@ -250,6 +272,6 @@ class reactor_class(gym.Env):
     self.s_history.append(state[0:2])
     #Compute reward (squared distance + scaled)
   
-    r_x = ((e[0])**2) * 1e2 #+ u_mag + u_cha
+    r_x = ((e[1])**2) * 1e2 #+ u_mag + u_cha
 
     return state_plus, -r_x
